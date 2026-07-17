@@ -1,0 +1,226 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String            @id @default(uuid())
+  email                String            @unique
+  passwordHash         String
+  name                 String
+  gender               String?
+  heightCm             Float?
+  weightKg             Float?
+  bodyType             String?
+  tokenVersion         Int               @default(0)
+  passwordResetToken   String?           @unique
+  passwordResetExpires DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  settings             Settings?
+  clothingItems        ClothingItem[]
+  outfits              Outfit[]
+  scheduledOutfits     ScheduledOutfit[]
+  favorites            Favorite[]
+  chatMessages         ChatMessage[]
+  notifications        Notification[]
+}
+
+model Settings {
+  id                      String   @id @default(uuid())
+  userId                  String   @unique
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  theme                   Theme    @default(LIGHT)
+  units                   Units    @default(METRIC)
+  language                String   @default("en")
+  notificationPreferences Json?
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
+}
+
+model ClothingItem {
+  id            String        @id @default(uuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  imageUrl      String
+  category      Category
+  subcategory   String
+  color         Color
+  brand         String?
+  fabric        Fabric
+  pattern       Pattern
+  season        Season
+  occasionTags  Occasion[]
+  isFavorite    Boolean       @default(false)
+  purchaseDate  DateTime?
+  notes         String?
+  laundryStatus LaundryStatus @default(AVAILABLE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  outfitItems   OutfitItem[]
+  favorites     Favorite[]
+}
+
+model Outfit {
+  id               String            @id @default(uuid())
+  userId           String
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occasion         Occasion
+  weatherTag       String?
+  aiReason         String?
+  isFavorite       Boolean           @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  items            OutfitItem[]
+  scheduledOutfits ScheduledOutfit[]
+  favorites        Favorite[]
+}
+
+model OutfitItem {
+  id             String       @id @default(uuid())
+  outfitId       String
+  outfit         Outfit       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  clothingItemId String
+  clothingItem   ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@unique([outfitId, clothingItemId])
+}
+
+model ScheduledOutfit {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date      DateTime
+  outfitId  String
+  outfit    Outfit   @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Favorite {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clothingItemId String?
+  clothingItem   ClothingItem? @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+  outfitId       String?
+  outfit         Outfit?       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  createdAt      DateTime      @default(now())
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role      Role
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type         String
+  message      String
+  read         Boolean   @default(false)
+  scheduledFor DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+enum Theme {
+  LIGHT
+  DARK
+}
+
+enum Units {
+  METRIC
+  IMPERIAL
+}
+
+enum LaundryStatus {
+  AVAILABLE
+  DIRTY
+  WASHING
+  IRONING
+  UNAVAILABLE
+}
+
+enum Category {
+  TOPS
+  BOTTOMS
+  OUTERWEAR
+  FOOTWEAR
+  ACCESSORIES
+  UNDERWEAR
+  OTHER
+}
+
+enum Color {
+  BLACK
+  WHITE
+  GREY
+  BEIGE
+  BROWN
+  NAVY
+  BLUE
+  GREEN
+  RED
+  YELLOW
+  PINK
+  PURPLE
+  ORANGE
+  MULTICOLOR
+}
+
+enum Fabric {
+  COTTON
+  DENIM
+  LINEN
+  WOOL
+  SILK
+  LEATHER
+  SYNTHETIC
+  KNIT
+  VELVET
+  OTHER
+}
+
+enum Pattern {
+  SOLID
+  STRIPED
+  CHECKED
+  FLORAL
+  PLAID
+  GRAPHIC
+  ANIMAL
+  DOTS
+  OTHER
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  AUTUMN
+  WINTER
+  ALL_SEASON
+}
+
+enum Occasion {
+  CASUAL
+  FORMAL
+  BUSINESS
+  SPORT
+  PARTY
+  LOUNGE
+}
+
+enum Role {
+  USER
+  ASSISTANT
+}

@@ -1,0 +1,23 @@
+import React from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { BarChart3, CalendarDays, Crown, Heart, Home, LogOut, Plus, Settings, Shirt, Sparkles, User, WashingMachine } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
+
+const activeLinks = [{ to: '/', label: 'Dashboard', icon: Home, end: true }, { to: '/wardrobe', label: 'My wardrobe', icon: Shirt }, { to: '/profile', label: 'Profile', icon: User }];
+const upcomingLinks = [{ label: 'Outfit planner', icon: Crown }, { label: 'Calendar', icon: CalendarDays }, { label: 'Laundry', icon: WashingMachine }, { label: 'Favorites', icon: Heart }, { label: 'Analytics', icon: BarChart3 }, { label: 'Settings', icon: Settings }];
+
+export default function DashboardLayout() {
+  const { user, logout } = useAuth(); const navigate = useNavigate();
+  const signOut = async () => { await logout(); navigate('/login', { replace: true }); };
+  return <div className="min-h-screen bg-[#f7f8fc] text-slate-900 dark:bg-brand-neutral-darkbg dark:text-slate-100">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] flex-col border-r border-slate-100 bg-white px-4 py-6 dark:border-slate-800 dark:bg-slate-950 lg:flex">
+      <NavLink to="/" className="mb-9 flex items-center gap-2 px-3"><span className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-brand-purple-500 to-brand-pink-500 text-white shadow-md"><Sparkles className="h-5 w-5" /></span><span className="text-xl font-black tracking-tight">DripLy</span></NavLink>
+      <nav className="space-y-1">{activeLinks.map(({ to, label, icon: Icon, end }) => <NavLink key={to} to={to} end={end} className={({ isActive }) => `flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold transition ${isActive ? 'bg-brand-purple-50 text-brand-purple-700 dark:bg-brand-purple-950/35 dark:text-brand-purple-300' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-900 dark:hover:text-white'}`}><Icon className="h-[18px] w-[18px]" />{label}</NavLink>)}</nav>
+      <div className="my-4 border-t border-slate-100 dark:border-slate-800" />
+      <nav className="space-y-1">{upcomingLinks.map(({ label, icon: Icon }) => <div key={label} title="Coming soon" className="flex cursor-default items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-slate-400 dark:text-slate-600"><Icon className="h-[18px] w-[18px]" />{label}<span className="ml-auto text-[9px] font-bold uppercase tracking-wide">soon</span></div>)}</nav>
+      <div className="mt-auto border-t border-slate-100 pt-4 dark:border-slate-800"><NavLink to="/profile" className="flex items-center gap-3 rounded-xl p-2 hover:bg-slate-50 dark:hover:bg-slate-900"><span className="grid h-9 w-9 place-items-center rounded-full bg-brand-purple-100 font-black text-brand-purple-700 dark:bg-brand-purple-950 dark:text-brand-purple-300">{user?.name?.[0]?.toUpperCase() || 'D'}</span><span className="min-w-0 flex-1"><strong className="block truncate text-sm">{user?.name || 'DripLy member'}</strong><small className="block truncate text-xs text-slate-400">View profile</small></span></NavLink><button onClick={signOut} className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs font-bold text-slate-500 hover:bg-rose-50 hover:text-rose-600"><LogOut className="h-4 w-4" />Sign out</button></div>
+    </aside>
+    <main className="pb-24 lg:ml-[248px] lg:pb-8"><Outlet /></main>
+    <nav className="fixed inset-x-3 bottom-3 z-30 grid grid-cols-5 rounded-2xl border border-slate-100 bg-white/95 p-2 shadow-xl backdrop-blur dark:border-slate-800 dark:bg-slate-950/95 lg:hidden"><NavLink to="/" end className={({ isActive }) => `flex flex-col items-center gap-1 rounded-xl py-1 text-[10px] font-bold ${isActive ? 'text-brand-purple-600' : 'text-slate-500'}`}><Home className="h-5 w-5" />Home</NavLink><NavLink to="/wardrobe" className={({ isActive }) => `flex flex-col items-center gap-1 rounded-xl py-1 text-[10px] font-bold ${isActive ? 'text-brand-purple-600' : 'text-slate-500'}`}><Shirt className="h-5 w-5" />Wardrobe</NavLink><NavLink to="/wardrobe/add" className="-mt-6 grid h-12 w-12 place-self-center place-items-center rounded-full bg-gradient-to-br from-brand-purple-600 to-brand-pink-500 text-white shadow-lg"><Plus className="h-6 w-6" /></NavLink><span className="flex flex-col items-center gap-1 py-1 text-[10px] font-bold text-slate-400"><Crown className="h-5 w-5" />Outfits</span><NavLink to="/profile" className={({ isActive }) => `flex flex-col items-center gap-1 rounded-xl py-1 text-[10px] font-bold ${isActive ? 'text-brand-purple-600' : 'text-slate-500'}`}><User className="h-5 w-5" />Profile</NavLink></nav>
+  </div>;
+}
