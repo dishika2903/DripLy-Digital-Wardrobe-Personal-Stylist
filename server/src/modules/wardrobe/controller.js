@@ -1,5 +1,5 @@
 import * as wardrobeService from './service.js';
-import { createClothingItemSchema, updateClothingItemSchema } from './validation.js';
+import { createClothingItemSchema, updateClothingItemSchema, wardrobeQuerySchema } from './validation.js';
 
 const normalizedBody = (body) => {
   const occasionTags = body.occasionTags ?? body['occasionTags[]'];
@@ -83,16 +83,7 @@ export const getClothingItem = async (req, res, next) => {
 
 export const getWardrobe = async (req, res, next) => {
   try {
-    const filters = {
-      category: req.query.category,
-      color: req.query.color,
-      brand: req.query.brand,
-      season: req.query.season,
-      laundryStatus: req.query.laundryStatus,
-      isFavorite: req.query.isFavorite,
-      page: req.query.page,
-      limit: req.query.limit,
-    };
+    const filters = wardrobeQuerySchema.parse(req.query);
 
     const result = await wardrobeService.getItems(req.user.id, filters);
 

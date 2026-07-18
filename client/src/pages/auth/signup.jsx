@@ -5,7 +5,8 @@ import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
-import { Sparkles, User, Mail, Lock, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { User, Mail, Lock, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import Logo from '../../components/common/Logo';
 
 const signupSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters long'),
@@ -70,9 +71,7 @@ export default function Signup() {
         className="sm:mx-auto sm:w-full sm:max-w-md text-center px-4"
       >
         <div className="flex justify-center mb-4">
-          <div className="bg-gradient-to-tr from-brand-purple-600 to-brand-pink-500 p-3 rounded-2xl text-white shadow-soft">
-            <Sparkles className="h-8 w-8" />
-          </div>
+          <div className="bg-white p-2 rounded-2xl shadow-soft dark:bg-slate-900"><Logo className="h-12 w-12" /></div>
         </div>
         <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
           Create your account

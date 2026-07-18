@@ -7,6 +7,8 @@ import logger from './utils/logger.js';
 import env from './config/env.js';
 import authRouter from './modules/auth/routes.js';
 import wardrobeRouter from './modules/wardrobe/routes.js';
+import settingsRouter from './modules/settings/routes.js';
+import outfitsRouter from './modules/outfits/routes.js';
 
 const app = express();
 
@@ -62,6 +64,8 @@ app.use((req, res, next) => {
 // Routes mounting
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/wardrobe', wardrobeRouter);
+app.use('/api/v1/settings', settingsRouter);
+app.use('/api/v1/outfits', outfitsRouter);
 
 // Hello World & Health Check Route
 app.get('/api/v1/hello', (req, res) => {

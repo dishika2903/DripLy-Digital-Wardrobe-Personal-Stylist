@@ -80,6 +80,8 @@ export const AuthProvider = ({ children }) => {
     return res;
   };
 
+  const setAuthenticatedUser = (nextUser) => setUser(nextUser);
+
   const value = {
     user,
     loading,
@@ -88,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     logoutAll,
     updateProfile,
+    setAuthenticatedUser,
     isAuthenticated: !!user,
   };
 

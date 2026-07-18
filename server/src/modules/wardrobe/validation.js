@@ -24,6 +24,20 @@ const SeasonEnum = z.enum(['SPRING', 'SUMMER', 'AUTUMN', 'WINTER', 'ALL_SEASON']
 const OccasionEnum = z.enum(['CASUAL', 'FORMAL', 'BUSINESS', 'SPORT', 'PARTY', 'LOUNGE']);
 const LaundryStatusEnum = z.enum(['AVAILABLE', 'DIRTY', 'WASHING', 'IRONING', 'UNAVAILABLE']);
 
+export const wardrobeQuerySchema = z.object({
+  category: CategoryEnum.optional(),
+  color: ColorEnum.optional(),
+  occasion: OccasionEnum.optional(),
+  brand: z.string().trim().max(100).optional(),
+  season: SeasonEnum.optional(),
+  laundryStatus: LaundryStatusEnum.optional(),
+  isFavorite: z.enum(['true', 'false']).optional(),
+  search: z.string().trim().max(100).optional(),
+  sort: z.enum(['newest', 'oldest', 'name-asc', 'name-desc']).default('newest'),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(12),
+});
+
 export const createClothingItemSchema = z.object({
   category: CategoryEnum.default('OTHER'),
   subcategory: z.string().trim().min(1, 'Subcategory is required').default('Other'),

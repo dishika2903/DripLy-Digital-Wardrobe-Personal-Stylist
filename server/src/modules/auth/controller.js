@@ -1,7 +1,8 @@
 import * as authService from './service.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/jwt.js';
 import logger from '../../utils/logger.js';
-import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, updateProfileSchema } from './validation.js';
+import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, updateProfileSchema, changePasswordSchema, deleteAccountSchema } from './validation.js';
+import { serializeUser } from './serializer.js';
 
 // Cookie settings helper
 const setRefreshTokenCookie = (res, token) => {
@@ -36,11 +37,7 @@ const sendAuthResponse = (res, user, statusCode = 200) => {
   res.status(statusCode).json({
     success: true,
     data: {
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-      },
+      user: serializeUser(user),
       accessToken,
     },
   });
@@ -176,7 +173,7 @@ export const me = async (req, res, next) => {
     // req.user is verified and attached by authMiddleware
     res.json({
       success: true,
-      data: { user: req.user },
+      data: { user: serializeUser(req.user) },
     });
   } catch (error) {
     next(error);
@@ -187,8 +184,40 @@ export const updateProfile = async (req, res, next) => {
   try {
     const data = updateProfileSchema.parse(req.body);
     const user = await authService.updateUserProfile(req.user.id, data);
-    res.json({ success: true, data: { user } });
+    res.json({ success: true, data: { user: serializeUser(user) } });
   } catch (error) {
     next(error);
   }
+};
+
+export const updateAvatar = async (req, res, next) => {
+  try {
+    if (!req.cloudinaryUrl) {
+      const error = new Error('An avatar image is required'); error.status = 400; error.code = 'VALIDATION_ERROR'; throw error;
+    }
+    const user = await authService.updateAvatar(req.user.id, req.cloudinaryUrl);
+    res.json({ success: true, data: { user: serializeUser(user) } });
+  } catch (error) { next(error); }
+};
+
+export const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+    await authService.changePassword(req.user.id, currentPassword, newPassword);
+    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
+    res.json({ success: true, data: { message: 'Password updated. Please sign in again.' } });
+  } catch (error) { next(error); }
+};
+
+export const accountSummary = async (req, res, next) => {
+  try { res.json({ success: true, data: await authService.getAccountSummary(req.user.id) }); } catch (error) { next(error); }
+};
+
+export const deleteAccount = async (req, res, next) => {
+  try {
+    const { confirmEmail } = deleteAccountSchema.parse(req.body);
+    await authService.deleteUserAccount(req.user.id, confirmEmail);
+    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
+    res.json({ success: true, data: { message: 'Account deleted successfully' } });
+  } catch (error) { next(error); }
 };

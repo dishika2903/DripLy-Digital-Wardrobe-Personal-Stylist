@@ -1,10 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model User {
@@ -12,40 +12,40 @@ model User {
   email                String            @unique
   passwordHash         String
   name                 String
-  gender               String?
-  heightCm             Float?
-  weightKg             Float?
-  bodyType             String?
+  avatarUrl            String?
   tokenVersion         Int               @default(0)
   passwordResetToken   String?           @unique
   passwordResetExpires DateTime?
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
-  settings             Settings?
+  bodyType             String?
+  gender               String?
+  heightCm             Float?
+  weightKg             Float?
+  chatMessages         ChatMessage[]
   clothingItems        ClothingItem[]
+  favorites            Favorite[]
+  notifications        Notification[]
   outfits              Outfit[]
   scheduledOutfits     ScheduledOutfit[]
-  favorites            Favorite[]
-  chatMessages         ChatMessage[]
-  notifications        Notification[]
+  settings             Settings?
 }
 
 model Settings {
   id                      String   @id @default(uuid())
   userId                  String   @unique
-  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   theme                   Theme    @default(LIGHT)
   units                   Units    @default(METRIC)
   language                String   @default("en")
   notificationPreferences Json?
   createdAt               DateTime @default(now())
   updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ClothingItem {
   id            String        @id @default(uuid())
   userId        String
-  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   imageUrl      String
   category      Category
   subcategory   String
@@ -61,32 +61,33 @@ model ClothingItem {
   laundryStatus LaundryStatus @default(AVAILABLE)
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  outfitItems   OutfitItem[]
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   favorites     Favorite[]
+  outfitItems   OutfitItem[]
 }
 
 model Outfit {
   id               String            @id @default(uuid())
   userId           String
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   occasion         Occasion
   weatherTag       String?
   aiReason         String?
   isFavorite       Boolean           @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  favorites        Favorite[]
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   items            OutfitItem[]
   scheduledOutfits ScheduledOutfit[]
-  favorites        Favorite[]
 }
 
 model OutfitItem {
   id             String       @id @default(uuid())
   outfitId       String
-  outfit         Outfit       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
   clothingItemId String
-  clothingItem   ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
   createdAt      DateTime     @default(now())
+  clothingItem   ClothingItem @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+  outfit         Outfit       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
 
   @@unique([outfitId, clothingItemId])
 }
@@ -94,43 +95,49 @@ model OutfitItem {
 model ScheduledOutfit {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   date      DateTime
   outfitId  String
-  outfit    Outfit   @relation(fields: [outfitId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  outfit    Outfit   @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Favorite {
   id             String        @id @default(uuid())
   userId         String
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   clothingItemId String?
-  clothingItem   ClothingItem? @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
   outfitId       String?
-  outfit         Outfit?       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
   createdAt      DateTime      @default(now())
+  clothingItem   ClothingItem? @relation(fields: [clothingItemId], references: [id], onDelete: Cascade)
+  outfit         Outfit?       @relation(fields: [outfitId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ChatMessage {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      Role
   content   String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Notification {
   id           String    @id @default(uuid())
   userId       String
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   type         String
   message      String
   read         Boolean   @default(false)
   scheduledFor DateTime?
   createdAt    DateTime  @default(now())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model playing_with_neon {
+  id    Int    @id @default(autoincrement())
+  name  String
+  value Float? @db.Real
 }
 
 enum Theme {

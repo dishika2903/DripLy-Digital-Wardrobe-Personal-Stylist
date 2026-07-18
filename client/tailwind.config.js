@@ -20,6 +20,7 @@ export default {
             700: '#6d28d9',
             800: '#5b21b6',
             900: '#4c1d95',
+            950: '#2e1065',
           },
           pink: {
             50: '#fdf2f8',
@@ -32,6 +33,7 @@ export default {
             700: '#be185d',
             800: '#9d174d',
             900: '#831843',
+            950: '#500724',
           },
           neutral: {
             lightbg: '#f8f9fa', // Very light gray background

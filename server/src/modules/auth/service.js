@@ -37,8 +37,11 @@ export const registerUser = async ({ name, email, password, gender, heightCm, we
       },
     });
 
-    const { passwordHash: _, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    const userWithSettings = await tx.user.findUnique({
+      where: { id: user.id },
+      include: { settings: true },
+    });
+    return userWithSettings;
   });
 };
 
@@ -48,7 +51,7 @@ export const registerUser = async ({ name, email, password, gender, heightCm, we
  * @returns {Object} validated user model
  */
 export const loginUser = async ({ email, password }) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ where: { email }, include: { settings: true } });
   if (!user) {
     const error = new Error('Invalid email or password');
     error.status = 401;
@@ -64,8 +67,7 @@ export const loginUser = async ({ email, password }) => {
     throw error;
   }
 
-  const { passwordHash: _, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+  return user;
 };
 
 /**
@@ -79,8 +81,7 @@ export const getUserById = async (id) => {
     include: { settings: true },
   });
   if (!user) return null;
-  const { passwordHash: _, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+  return user;
 };
 
 /**
@@ -97,8 +98,46 @@ export const incrementTokenVersion = async (userId) => {
 export const updateUserProfile = async (userId, data) => {
   const cleanData = Object.fromEntries(Object.entries(data).map(([key, value]) => [key, value === '' ? null : value]));
   const user = await prisma.user.update({ where: { id: userId }, data: cleanData, include: { settings: true } });
-  const { passwordHash: _, ...userWithoutPassword } = user;
-  return userWithoutPassword;
+  return user;
+};
+
+export const updateAvatar = async (userId, avatarUrl) => {
+  return prisma.user.update({ where: { id: userId }, data: { avatarUrl }, include: { settings: true } });
+};
+
+export const changePassword = async (userId, currentPassword, newPassword) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const matches = user && await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!matches) {
+    const error = new Error('Current password is incorrect');
+    error.status = 400;
+    error.code = 'INVALID_CURRENT_PASSWORD';
+    throw error;
+  }
+
+  return prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: await bcrypt.hash(newPassword, 10), tokenVersion: { increment: 1 } },
+  });
+};
+
+export const getAccountSummary = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { createdAt: true, _count: { select: { clothingItems: true, outfits: true } } },
+  });
+  return { memberSince: user.createdAt, wardrobeItems: user._count.clothingItems, outfits: user._count.outfits };
+};
+
+export const deleteUserAccount = async (userId, confirmEmail) => {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true } });
+  if (!user || user.email.toLowerCase() !== confirmEmail.toLowerCase()) {
+    const error = new Error('Enter your account email exactly to confirm deletion');
+    error.status = 400;
+    error.code = 'DELETE_CONFIRMATION_MISMATCH';
+    throw error;
+  }
+  await prisma.user.delete({ where: { id: userId } });
 };
 
 /**

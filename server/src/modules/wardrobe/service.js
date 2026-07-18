@@ -94,14 +94,17 @@ export const getItems = async (userId, filters = {}) => {
     color,
     brand,
     season,
+    occasion,
     laundryStatus,
     isFavorite,
+    search,
+    sort = 'newest',
     page = 1,
     limit = 12,
   } = filters;
 
-  const parsedPage = Math.max(1, parseInt(page));
-  const parsedLimit = Math.max(1, parseInt(limit));
+  const parsedPage = Math.max(1, parseInt(page, 10));
+  const parsedLimit = Math.min(100, Math.max(1, parseInt(limit, 10)));
   const skip = (parsedPage - 1) * parsedLimit;
 
   // Build prisma filter clauses dynamically
@@ -112,6 +115,7 @@ export const getItems = async (userId, filters = {}) => {
   if (category) where.category = category;
   if (color) where.color = color;
   if (season) where.season = season;
+  if (occasion) where.occasionTags = { has: occasion };
   if (laundryStatus) where.laundryStatus = laundryStatus;
   
   if (brand) {
@@ -121,9 +125,24 @@ export const getItems = async (userId, filters = {}) => {
     };
   }
 
+  if (search) {
+    where.OR = [
+      { subcategory: { contains: search, mode: 'insensitive' } },
+      { brand: { contains: search, mode: 'insensitive' } },
+      { notes: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
   if (isFavorite !== undefined) {
     where.isFavorite = isFavorite === 'true' || isFavorite === true;
   }
+
+  const orderBy = {
+    newest: { createdAt: 'desc' },
+    oldest: { createdAt: 'asc' },
+    'name-asc': { subcategory: 'asc' },
+    'name-desc': { subcategory: 'desc' },
+  }[sort];
 
   // Run total count and item fetch concurrently
   const [items, total] = await Promise.all([
@@ -131,7 +150,7 @@ export const getItems = async (userId, filters = {}) => {
       where,
       skip,
       take: parsedLimit,
-      orderBy: { createdAt: 'desc' },
+      orderBy,
     }),
     prisma.clothingItem.count({ where }),
   ]);
