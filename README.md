@@ -23,6 +23,7 @@ DripLy is a digital wardrobe and personal stylist application built with a Node.
    cd server
    npx prisma migrate dev
    ```
+   Seed a ready-to-use test account and sample wardrobe with `npx prisma db seed` (login: `test@driply.dev` / `DripLyTest123!`).
 3. Install dependencies from the root directory:
    ```bash
    npm install

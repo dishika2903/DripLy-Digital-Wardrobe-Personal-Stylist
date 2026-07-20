@@ -32,3 +32,8 @@ export const getWardrobe = async (params = {}) => {
   const res = await api.get('/wardrobe', { params });
   return res.data;
 };
+
+export const classifyClothing = async (file) => {
+  const formData = new FormData(); formData.append('image', file);
+  return (await api.post('/ai/classify', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
+};

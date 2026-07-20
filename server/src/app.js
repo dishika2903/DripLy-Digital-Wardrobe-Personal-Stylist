@@ -9,6 +9,7 @@ import authRouter from './modules/auth/routes.js';
 import wardrobeRouter from './modules/wardrobe/routes.js';
 import settingsRouter from './modules/settings/routes.js';
 import outfitsRouter from './modules/outfits/routes.js';
+import aiRouter from './modules/ai/routes.js';
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/wardrobe', wardrobeRouter);
 app.use('/api/v1/settings', settingsRouter);
 app.use('/api/v1/outfits', outfitsRouter);
+app.use('/api/v1/ai', aiRouter);
 
 // Hello World & Health Check Route
 app.get('/api/v1/hello', (req, res) => {

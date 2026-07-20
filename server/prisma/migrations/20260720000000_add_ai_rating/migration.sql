@@ -1,0 +1,1 @@
+ALTER TABLE "Outfit" ADD COLUMN "aiRating" INTEGER;

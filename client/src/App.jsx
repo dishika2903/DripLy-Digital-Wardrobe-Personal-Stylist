@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import Login from './pages/auth/login';
 import Signup from './pages/auth/signup';
@@ -14,6 +15,7 @@ import ClothingDetails from './pages/wardrobe/clothing-details';
 import DashboardLayout from './components/layout/DashboardLayout';
 import Dashboard from './pages/dashboard';
 import Wardrobe from './pages/wardrobe';
+import Outfits from './pages/outfits';
 
 const queryClient = new QueryClient();
 
@@ -21,6 +23,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
+        <ThemeProvider>
         <BrowserRouter>
           <Routes>
             {/* Public Authentication Pages */}
@@ -34,6 +37,7 @@ export default function App() {
               <Route element={<DashboardLayout />}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/wardrobe" element={<Wardrobe />} />
+              <Route path="/outfits" element={<Outfits />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/wardrobe/add" element={<AddClothing />} />
               <Route path="/wardrobe/edit/:id" element={<EditClothing />} />
@@ -45,6 +49,7 @@ export default function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
+        </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
