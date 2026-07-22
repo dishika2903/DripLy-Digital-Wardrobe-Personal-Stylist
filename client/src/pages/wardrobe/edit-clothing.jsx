@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { getClothingItem, updateClothingItem } from '../../services/api/wardrobe';
 import { CATEGORY_MAP, COLORS, FABRICS, PATTERNS, SEASONS, OCCASIONS, LAUNDRY_STATUSES } from '../../constants/categories';
@@ -25,6 +25,7 @@ const formSchema = z.object({
 export default function EditClothing() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [selectedOccasions, setSelectedOccasions] = useState([]);
@@ -138,6 +139,8 @@ export default function EditClothing() {
 
       const res = await updateClothingItem(id, formData);
       if (res?.success) {
+        await queryClient.invalidateQueries({ queryKey: ['wardrobe'] });
+        await queryClient.invalidateQueries({ queryKey: ['clothingItem', id] });
         navigate(`/wardrobe/${id}`);
       } else {
         setServerError(res?.error?.message || 'Failed to update clothing item.');

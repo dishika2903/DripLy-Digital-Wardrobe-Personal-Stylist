@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight, Filter, Plus, Search, Shirt, SlidersHorizontal, X } from 'lucide-react';
 import { getWardrobe } from '../../services/api/wardrobe';
@@ -9,7 +9,16 @@ const initialFilters = { category: '', color: '', occasion: '', brand: '', seaso
 const selectClass = 'w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm outline-none transition focus:border-brand-purple-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white';
 
 export default function Wardrobe() {
-  const [filters, setFilters] = useState(initialFilters); const [showFilters, setShowFilters] = useState(false);
+  const [searchParams] = useSearchParams();
+  // Category tiles on the dashboard (and any other deep link) pass filters via the URL, e.g.
+  // /wardrobe?category=TOPS. Previously these params were never read, so every one of those
+  // links landed on the same unfiltered "all items" view regardless of which icon was clicked.
+  const [filters, setFilters] = useState(() => ({
+    ...initialFilters,
+    category: searchParams.get('category') || '',
+    search: searchParams.get('search') || '',
+  }));
+  const [showFilters, setShowFilters] = useState(() => Boolean(searchParams.get('category')));
   const update = (key, value) => setFilters((current) => ({ ...current, [key]: value, page: key === 'page' ? value : 1 }));
   const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ''));
   const { data, isLoading, isFetching } = useQuery({ queryKey: ['wardrobe', filters], queryFn: () => getWardrobe(params), placeholderData: (previous) => previous });

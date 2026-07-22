@@ -12,7 +12,6 @@ model User {
   email                String            @unique
   passwordHash         String
   name                 String
-  avatarUrl            String?
   tokenVersion         Int               @default(0)
   passwordResetToken   String?           @unique
   passwordResetExpires DateTime?
@@ -22,6 +21,7 @@ model User {
   gender               String?
   heightCm             Float?
   weightKg             Float?
+  avatarUrl            String?
   chatMessages         ChatMessage[]
   clothingItems        ClothingItem[]
   favorites            Favorite[]
@@ -72,10 +72,10 @@ model Outfit {
   occasion         Occasion
   weatherTag       String?
   aiReason         String?
-  aiRating         Int?
   isFavorite       Boolean           @default(false)
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
+  aiRating         Int?
   favorites        Favorite[]
   user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   items            OutfitItem[]

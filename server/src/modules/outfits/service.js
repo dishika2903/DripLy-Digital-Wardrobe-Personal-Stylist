@@ -1,6 +1,7 @@
 import prisma from '../../config/db.js';
 import ai, { GEMINI_MODEL } from '../../config/ai.js';
 import { z } from 'zod';
+import logger from '../../utils/logger.js';
 
 const neutralColors = new Set(['BLACK', 'WHITE', 'GREY', 'BEIGE', 'BROWN', 'NAVY']);
 const isDress = (item) => ['Dress', 'Jumpsuit'].includes(item.subcategory);
@@ -15,15 +16,7 @@ const reasonFor = (items, occasion) => {
   return `A complete ${occasion.toLowerCase()} look using your available pieces, balanced with ${colors} tones.`;
 };
 
-export const generateOutfits = async (userId, occasion, limit) => {
-  const matchingItems = await prisma.clothingItem.findMany({
-    where: { userId, laundryStatus: 'AVAILABLE', occasionTags: { has: occasion } },
-    orderBy: { createdAt: 'desc' },
-  });
-  const items = matchingItems.length ? matchingItems : await prisma.clothingItem.findMany({
-    where: { userId, laundryStatus: 'AVAILABLE' },
-    orderBy: { createdAt: 'desc' },
-  });
+const buildOutfits = (items, occasion) => {
   const tops = items.filter((item) => item.category === 'TOPS');
   const bottoms = items.filter((item) => item.category === 'BOTTOMS');
   const shoes = items.filter((item) => item.category === 'FOOTWEAR');
@@ -47,7 +40,23 @@ export const generateOutfits = async (userId, occasion, limit) => {
       }
     }
   }
-  return suggestions.sort((a, b) => b.score - a.score).slice(0, limit).map(({ score, ...suggestion }) => suggestion);
+  return suggestions.sort((a, b) => b.score - a.score).map(({ score, ...suggestion }) => ({ ...suggestion, source: 'rule' }));
+};
+
+export const generateOutfits = async (userId, occasion, limit) => {
+  const [matchingItems, availableItems] = await Promise.all([
+    prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE', occasionTags: { has: occasion } }, orderBy: { createdAt: 'desc' } }),
+    prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, orderBy: { createdAt: 'desc' } }),
+  ]);
+  const matchingOutfits = buildOutfits(matchingItems, occasion);
+  if (matchingOutfits.length >= limit) return matchingOutfits.slice(0, limit);
+
+  const seen = new Set(matchingOutfits.map((outfit) => outfit.items.map((item) => item.id).sort().join(':')));
+  const fallbackMessage = `Only ${matchingOutfits.length ? `${matchingOutfits.length} ${occasion.toLowerCase()} look${matchingOutfits.length === 1 ? '' : 's'} ` : ''}could be made from your ${occasion.toLowerCase()} pieces. Showing other available options too.`;
+  const fallbackOutfits = buildOutfits(availableItems, occasion)
+    .filter((outfit) => !seen.has(outfit.items.map((item) => item.id).sort().join(':')))
+    .map((outfit) => ({ ...outfit, fallbackMessage }));
+  return [...matchingOutfits, ...fallbackOutfits].slice(0, limit);
 };
 
 const aiTimeout = (promise) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('AI request timed out')), 20000))]);
@@ -63,9 +72,13 @@ export const suggestOutfits = async (userId, { occasion = 'CASUAL', prompt }) =>
   try {
     const response = await aiTimeout(ai.models.generateContent({ model: GEMINI_MODEL, contents: request, config: { responseMimeType: 'application/json' } }));
     const parsed = outfitResponseSchema(items.map((item) => item.id)).parse(JSON.parse(response.text));
-    return parsed.suggestions.map((suggestion) => ({ ...suggestion, items: suggestion.clothingItemIds.map((id) => items.find((item) => item.id === id)) }));
-  } catch {
-    // AI outages and hallucinated IDs degrade to the existing deterministic generator.
+    return parsed.suggestions.map((suggestion) => ({ ...suggestion, source: 'ai', items: suggestion.clothingItemIds.map((id) => items.find((item) => item.id === id)) }));
+  } catch (error) {
+    // AI outages and hallucinated IDs degrade to the existing deterministic generator, but log
+    // the real reason (bad API key, wrong model name, quota, timeout, schema mismatch, etc.) —
+    // previously this was a bare `catch {}` so every AI failure was invisible and looked
+    // identical to "AI is just giving generic guesses" from the user's side.
+    logger.error({ err: error, occasion, prompt, model: GEMINI_MODEL }, 'Gemini suggestOutfits failed, degrading to rule-based generator');
     return generateOutfits(userId, occasion, 6);
   }
 };

@@ -1,12 +1,12 @@
 import React from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { BarChart3, CalendarDays, Crown, Heart, Home, LogOut, Moon, Plus, Settings, Shirt, Sparkles, Sun, User, WashingMachine } from 'lucide-react';
+import { BarChart3, Heart, Home, LogOut, Moon, Plus, Settings, Shirt, Sparkles, Sun, User, WashingMachine } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Logo from '../common/Logo';
 import { useTheme } from '../../context/ThemeContext';
 
 const activeLinks = [{ to: '/', label: 'Dashboard', icon: Home, end: true }, { to: '/wardrobe', label: 'My wardrobe', icon: Shirt }, { to: '/outfits', label: 'My outfits', icon: Sparkles }, { to: '/profile', label: 'Profile', icon: User }];
-const upcomingLinks = [{ label: 'Outfit planner', icon: Crown }, { label: 'Calendar', icon: CalendarDays }, { label: 'Laundry', icon: WashingMachine }, { label: 'Favorites', icon: Heart }, { label: 'Analytics', icon: BarChart3 }, { label: 'Settings', icon: Settings }];
+const upcomingLinks = [{ label: 'Laundry', icon: WashingMachine }, { label: 'Favorites', icon: Heart }, { label: 'Analytics', icon: BarChart3 }, { label: 'Settings', icon: Settings }];
 
 export default function DashboardLayout() {
   const { user, logout } = useAuth(); const { theme, toggleTheme } = useTheme(); const navigate = useNavigate();
