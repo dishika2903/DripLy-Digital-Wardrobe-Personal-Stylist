@@ -204,7 +204,7 @@ export default function ClothingDetails() {
                           style={{ background: colorData?.gradient || colorData?.hex }}
                         ></span>
                         <span className="font-semibold text-slate-700 dark:text-slate-250">
-                          {colorData?.label || item.color}
+                          {colorData?.label || item.color}{item.colorDetail ? ` — ${item.colorDetail}` : ''}
                         </span>
                       </div>
                     </div>

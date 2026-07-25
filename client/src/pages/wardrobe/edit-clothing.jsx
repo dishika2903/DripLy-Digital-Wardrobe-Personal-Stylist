@@ -13,6 +13,7 @@ const formSchema = z.object({
   category: z.string().min(1, 'Category is required'),
   subcategory: z.string().min(1, 'Subcategory is required'),
   color: z.string().min(1, 'Color is required'),
+  colorDetail: z.string().optional().nullable(),
   fabric: z.string().min(1, 'Fabric is required'),
   pattern: z.string().min(1, 'Pattern is required'),
   season: z.string().min(1, 'Season is required'),
@@ -63,6 +64,7 @@ export default function EditClothing() {
         category: itemData.category,
         subcategory: itemData.subcategory,
         color: itemData.color,
+        colorDetail: itemData.colorDetail || '',
         fabric: itemData.fabric,
         pattern: itemData.pattern,
         season: itemData.season,
@@ -124,6 +126,7 @@ export default function EditClothing() {
       formData.append('category', data.category);
       formData.append('subcategory', data.subcategory);
       formData.append('color', data.color);
+      formData.append('colorDetail', selectedColor === 'MULTICOLOR' ? data.colorDetail || '' : '');
       formData.append('fabric', data.fabric);
       formData.append('pattern', data.pattern);
       formData.append('season', data.season);
@@ -274,19 +277,15 @@ export default function EditClothing() {
                     <label className="block text-xs uppercase tracking-widest font-extrabold text-slate-400 dark:text-slate-500 mb-2">
                       Subcategory
                     </label>
-                    <select
+                    <input
                       {...register('subcategory')}
-                      disabled={!selectedCategory}
-                      className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm disabled:opacity-50"
-                    >
-                      <option value="">Select Subcategory</option>
-                      {selectedCategory &&
-                        CATEGORY_MAP[selectedCategory]?.map((sub) => (
-                          <option key={sub} value={sub}>
-                            {sub}
-                          </option>
-                        ))}
-                    </select>
+                      list="edit-subcategory-suggestions"
+                      placeholder="e.g. Wide-leg jeans, Chelsea boots"
+                      className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm"
+                    />
+                    <datalist id="edit-subcategory-suggestions">
+                      {selectedCategory && CATEGORY_MAP[selectedCategory]?.map((sub) => <option key={sub} value={sub} />)}
+                    </datalist>
                     {errors.subcategory && <p className="mt-1 text-xs text-rose-505 font-medium">{errors.subcategory.message}</p>}
                   </div>
                 </div>
@@ -317,6 +316,18 @@ export default function EditClothing() {
                     ))}
                   </div>
                   {errors.color && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.color.message}</p>}
+                  {selectedColor === 'MULTICOLOR' && (
+                    <div className="mt-3">
+                      <label className="block text-xs uppercase tracking-widest font-extrabold text-slate-400 dark:text-slate-500 mb-2">
+                        Which colors?
+                      </label>
+                      <input
+                        {...register('colorDetail')}
+                        placeholder="e.g. Black and white, navy with red trim"
+                        className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Fabric, Pattern, Season */}

@@ -4,13 +4,34 @@ import { z } from 'zod';
 import logger from '../../utils/logger.js';
 
 const neutralColors = new Set(['BLACK', 'WHITE', 'GREY', 'BEIGE', 'BROWN', 'NAVY']);
-const isDress = (item) => ['Dress', 'Jumpsuit'].includes(item.subcategory);
+// Patterns that read as visually "loud" — pairing two of these (even if different patterns)
+// tends to clash, whereas any of them pairs fine with a SOLID piece.
+const loudPatterns = new Set(['STRIPED', 'CHECKED', 'FLORAL', 'PLAID', 'GRAPHIC', 'ANIMAL', 'DOTS', 'CAMOUFLAGE', 'COLORBLOCK', 'GEOMETRIC', 'TIE_DYE']);
+// A "complete look" is anything that's a full outfit on its own (dress, saree, gown, jumpsuit,
+// suit, romper, etc.) rather than a top or bottom that needs pairing. These don't have their
+// own Category in the schema — they all live under OTHER — so category is the reliable signal
+// here, not subcategory text (which is free-form and can be anything the AI or the person
+// typed, e.g. "bodycon midi dress" or "saree", neither of which matches a fixed word list).
+const isCompleteLook = (item) => item.category === 'OTHER';
 const scorePair = (first, second) => {
-  if (first.color === second.color) return 3;
-  if (neutralColors.has(first.color) || neutralColors.has(second.color)) return 2;
-  if (first.color === 'MULTICOLOR' || second.color === 'MULTICOLOR') return 1;
-  return 0;
+  let score = 0;
+  if (first.color === second.color) score += 3;
+  else if (neutralColors.has(first.color) || neutralColors.has(second.color)) score += 2;
+  else if (first.color === 'MULTICOLOR' || second.color === 'MULTICOLOR') score += 1;
+
+  // Pattern compatibility: two solids always work, one solid + one pattern always works,
+  // two different loud patterns clash (e.g. stripes + florals), and matching patterns get a
+  // small bonus for being an intentional coordinated look.
+  if (first.pattern === second.pattern) score += 1;
+  else if (loudPatterns.has(first.pattern) && loudPatterns.has(second.pattern)) score -= 2;
+
+  return score;
 };
+// Bonus for an item actually being tagged for the target occasion. Weighted heavily (well
+// above anything color/pattern scoring can contribute) so that occasion is the dominant signal
+// in ranking, not a tie-breaker — an occasion-tagged item should consistently outrank an
+// untagged one even if the untagged one happens to color-match slightly better.
+const occasionBonus = (item, occasion) => (item.occasionTags?.includes(occasion) ? 6 : 0);
 const reasonFor = (items, occasion) => {
   const colors = [...new Set(items.map((item) => item.color.toLowerCase()))].join(' and ');
   return `A complete ${occasion.toLowerCase()} look using your available pieces, balanced with ${colors} tones.`;
@@ -21,13 +42,14 @@ const buildOutfits = (items, occasion) => {
   const bottoms = items.filter((item) => item.category === 'BOTTOMS');
   const shoes = items.filter((item) => item.category === 'FOOTWEAR');
   const layers = items.filter((item) => item.category === 'OUTERWEAR');
-  const dresses = items.filter(isDress);
+  const completeLooks = items.filter(isCompleteLook);
   const suggestions = [];
+  const occasionScore = (outfitItems) => outfitItems.reduce((sum, item) => sum + occasionBonus(item, occasion), 0);
 
-  for (const dress of dresses) {
+  for (const look of completeLooks) {
     for (const shoe of shoes.length ? shoes : [null]) {
-      const outfitItems = [dress, shoe].filter(Boolean);
-      suggestions.push({ items: outfitItems, score: 8 + (shoe ? scorePair(dress, shoe) : 0), aiReason: reasonFor(outfitItems, occasion) });
+      const outfitItems = [look, shoe].filter(Boolean);
+      suggestions.push({ items: outfitItems, score: 8 + (shoe ? scorePair(look, shoe) : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
     }
   }
   for (const top of tops) {
@@ -36,7 +58,7 @@ const buildOutfits = (items, occasion) => {
         const outfitItems = [top, bottom, shoe].filter(Boolean);
         const layer = layers.find((item) => scorePair(item, top) >= 1);
         if (layer) outfitItems.push(layer);
-        suggestions.push({ items: outfitItems, score: 10 + scorePair(top, bottom) + (shoe ? scorePair(bottom, shoe) : 0) + (layer ? 1 : 0), aiReason: reasonFor(outfitItems, occasion) });
+        suggestions.push({ items: outfitItems, score: 10 + scorePair(top, bottom) + (shoe ? scorePair(bottom, shoe) : 0) + (layer ? 1 : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
       }
     }
   }

@@ -50,6 +50,7 @@ model ClothingItem {
   category      Category
   subcategory   String
   color         Color
+  colorDetail   String?
   brand         String?
   fabric        Fabric
   pattern       Pattern
@@ -208,6 +209,13 @@ enum Pattern {
   GRAPHIC
   ANIMAL
   DOTS
+  CAMOUFLAGE
+  COLORBLOCK
+  GEOMETRIC
+  TEXTURED
+  TIE_DYE
+  OMBRE
+  METALLIC
   OTHER
 }
 

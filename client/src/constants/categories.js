@@ -1,11 +1,32 @@
 export const CATEGORY_MAP = {
-  TOPS: ['T-shirt', 'Shirt', 'Sweater', 'Blouse', 'Tank Top', 'Hoodie', 'Polo', 'Cardigan'],
-  BOTTOMS: ['Jeans', 'Trousers', 'Shorts', 'Skirt', 'Sweatpants', 'Leggings', 'Chinos'],
-  OUTERWEAR: ['Jacket', 'Coat', 'Blazer', 'Trench Coat', 'Vest', 'Windbreaker'],
-  FOOTWEAR: ['Sneakers', 'Boots', 'Flats', 'Heels', 'Loafers', 'Sandals', 'Slippers'],
-  ACCESSORIES: ['Bag', 'Hat', 'Scarf', 'Belt', 'Sunglasses', 'Gloves', 'Jewelry', 'Watch'],
-  UNDERWEAR: ['Socks', 'Underwear', 'Undershirt', 'Activewear'],
-  OTHER: ['Dress', 'Suit', 'Jumpsuit', 'Other']
+  TOPS: [
+    'T-shirt', 'Graphic Tee', 'Shirt', 'Button-down', 'Flannel Shirt', 'Sweater', 'Turtleneck',
+    'Blouse', 'Tank Top', 'Camisole', 'Crop Top', 'Hoodie', 'Sweatshirt', 'Polo', 'Cardigan',
+    'Henley', 'Bodysuit', 'Off-shoulder Top', 'Corset Top',
+  ],
+  BOTTOMS: [
+    'Skinny Jeans', 'Straight-leg Jeans', 'Wide-leg Jeans', 'Boot-cut Jeans', 'Flare Jeans',
+    'Mom Jeans', 'Bootleg Jeans', 'Trousers', 'Cargo Pants', 'Chinos', 'Culottes', 'Palazzo Pants',
+    'Joggers', 'Sweatpants', 'Leggings', 'Bermuda Shorts', 'Denim Shorts', 'Cargo Shorts',
+    'Bike Shorts', 'A-line Skirt', 'Pencil Skirt', 'Pleated Skirt', 'Mini Skirt', 'Maxi Skirt',
+  ],
+  OUTERWEAR: [
+    'Denim Jacket', 'Bomber Jacket', 'Leather Jacket', 'Puffer Jacket', 'Coat', 'Trench Coat',
+    'Overcoat', 'Parka', 'Blazer', 'Vest', 'Gilet', 'Windbreaker', 'Cape', 'Poncho',
+  ],
+  FOOTWEAR: [
+    'Low-top Sneakers', 'High-top Sneakers', 'Running Shoes', 'Ankle Boots', 'Chelsea Boots',
+    'Combat Boots', 'Knee-high Boots', 'Chukka Boots', 'Ballet Flats', 'Loafers', 'Mules',
+    'Stiletto Heels', 'Block Heels', 'Wedge Heels', 'Platform Heels', 'Espadrilles', 'Sandals',
+    'Slide Sandals', 'Flip-flops', 'Slippers', 'Oxfords', 'Derby Shoes', 'Boat Shoes',
+  ],
+  ACCESSORIES: [
+    'Tote Bag', 'Crossbody Bag', 'Backpack', 'Clutch', 'Baseball Cap', 'Beanie', 'Sun Hat',
+    'Scarf', 'Belt', 'Sunglasses', 'Gloves', 'Necklace', 'Earrings', 'Bracelet', 'Ring', 'Watch',
+    'Tie', 'Hair Accessory',
+  ],
+  UNDERWEAR: ['Socks', 'Ankle Socks', 'Underwear', 'Bra', 'Undershirt', 'Shapewear', 'Activewear Set'],
+  OTHER: ['Dress', 'Maxi Dress', 'Midi Dress', 'Sundress', 'Wrap Dress', 'Suit', 'Jumpsuit', 'Romper', 'Other'],
 };
 
 export const COLORS = [
@@ -47,6 +68,13 @@ export const PATTERNS = [
   { value: 'GRAPHIC', label: 'Graphic/Printed' },
   { value: 'ANIMAL', label: 'Animal Print' },
   { value: 'DOTS', label: 'Polka Dots' },
+  { value: 'CAMOUFLAGE', label: 'Camouflage' },
+  { value: 'COLORBLOCK', label: 'Colorblock' },
+  { value: 'GEOMETRIC', label: 'Geometric' },
+  { value: 'TEXTURED', label: 'Textured/Knit' },
+  { value: 'TIE_DYE', label: 'Tie-dye' },
+  { value: 'OMBRE', label: 'Ombre/Gradient' },
+  { value: 'METALLIC', label: 'Metallic' },
   { value: 'OTHER', label: 'Other' }
 ];
 
@@ -70,7 +98,4 @@ export const OCCASIONS = [
 export const LAUNDRY_STATUSES = [
   { value: 'AVAILABLE', label: 'Available (Clean)', colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-250/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' },
   { value: 'DIRTY', label: 'Dirty', colorClass: 'text-amber-600 bg-amber-50 border-amber-250/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' },
-  { value: 'WASHING', label: 'Washing', colorClass: 'text-blue-600 bg-blue-50 border-blue-250/50 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30' },
-  { value: 'IRONING', label: 'Ironing', colorClass: 'text-purple-600 bg-purple-50 border-purple-250/50 dark:bg-purple-950/20 dark:text-purple-400 dark:border-purple-900/30' },
-  { value: 'UNAVAILABLE', label: 'Unavailable', colorClass: 'text-rose-600 bg-rose-50 border-rose-250/50 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/30' }
 ];

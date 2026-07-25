@@ -24,7 +24,20 @@ export default function errorHandler(err, req, res, next) {
     let code = 'DATABASE_ERROR';
     let status = 500;
 
-    if (err.code === 'P2002') {
+    // P1xxx codes are connection/engine-layer failures (can't reach the server, connection
+    // closed, pool exhausted/timed out) — this is what Neon's cold-start-after-idle or a
+    // PgBouncer hiccup looks like to Prisma. It is distinct from P2xxx, which are query-layer
+    // errors against a working connection. Neon's dashboard can show the database as healthy
+    // while these still fire, since the failure is in the handshake, not the data.
+    if (['P1001', 'P1002', 'P1008', 'P1017'].includes(err.code)) {
+      message = 'Could not reach the database right now. Please try again in a few seconds.';
+      code = 'DATABASE_UNAVAILABLE';
+      status = 503;
+    } else if (err.code === 'P2024') {
+      message = 'The database is busy. Please try again in a moment.';
+      code = 'DATABASE_CONNECTION_TIMEOUT';
+      status = 503;
+    } else if (err.code === 'P2002') {
       message = `A record with this ${err.meta?.target?.join(', ') || 'field'} already exists`;
       code = 'UNIQUE_CONSTRAINT_ERROR';
       status = 409;
@@ -36,7 +49,14 @@ export default function errorHandler(err, req, res, next) {
 
     return res.status(status).json({
       success: false,
-      error: { message, code },
+      error: {
+        message,
+        code,
+        // Never leak raw Prisma internals in production, but in dev this is the fastest way
+        // to tell "wrong enum value" apart from "connection dropped" apart from "unique
+        // constraint" without re-reading server logs for every failed request.
+        ...(process.env.NODE_ENV !== 'production' ? { debug: { prismaCode: err.code, prismaMessage: err.message } } : {}),
+      },
     });
   }
 

@@ -19,7 +19,7 @@ const ColorEnum = z.enum([
   'MULTICOLOR',
 ]);
 const FabricEnum = z.enum(['COTTON', 'DENIM', 'LINEN', 'WOOL', 'SILK', 'LEATHER', 'SYNTHETIC', 'KNIT', 'VELVET', 'OTHER']);
-const PatternEnum = z.enum(['SOLID', 'STRIPED', 'CHECKED', 'FLORAL', 'PLAID', 'GRAPHIC', 'ANIMAL', 'DOTS', 'OTHER']);
+const PatternEnum = z.enum(['SOLID', 'STRIPED', 'CHECKED', 'FLORAL', 'PLAID', 'GRAPHIC', 'ANIMAL', 'DOTS', 'CAMOUFLAGE', 'COLORBLOCK', 'GEOMETRIC', 'TEXTURED', 'TIE_DYE', 'OMBRE', 'METALLIC', 'OTHER']);
 const SeasonEnum = z.enum(['SPRING', 'SUMMER', 'AUTUMN', 'WINTER', 'ALL_SEASON']);
 const OccasionEnum = z.enum(['CASUAL', 'FORMAL', 'BUSINESS', 'SPORT', 'PARTY', 'LOUNGE']);
 const LaundryStatusEnum = z.enum(['AVAILABLE', 'DIRTY', 'WASHING', 'IRONING', 'UNAVAILABLE']);
@@ -42,6 +42,7 @@ export const createClothingItemSchema = z.object({
   category: CategoryEnum.default('OTHER'),
   subcategory: z.string().trim().min(1, 'Subcategory is required').default('Other'),
   color: ColorEnum.default('MULTICOLOR'),
+  colorDetail: z.string().trim().max(100).optional().nullable(),
   brand: z.string().optional().nullable(),
   fabric: FabricEnum.default('OTHER'),
   pattern: PatternEnum.default('OTHER'),

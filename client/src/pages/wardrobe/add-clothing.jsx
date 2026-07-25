@@ -10,6 +10,7 @@ const initial = {
   category: 'OTHER',
   subcategory: '',
   color: 'MULTICOLOR',
+  colorDetail: '',
   pattern: 'OTHER',
   fabric: 'OTHER',
   season: 'ALL_SEASON',
@@ -48,6 +49,7 @@ export default function AddClothing() {
       // Changing the category invalidates whatever subcategory was picked from the old list.
       const next = { ...old, [key]: value };
       if (key === 'category') next.subcategory = '';
+      if (key === 'color' && value !== 'MULTICOLOR') next.colorDetail = '';
       return next;
     });
     setAiFields((old) => old.filter((field) => field !== key));
@@ -64,8 +66,11 @@ export default function AddClothing() {
     try {
       const response = await classifyClothing(file);
       const result = response.data;
-      setForm((old) => ({ ...old, category: result.category, subcategory: result.subcategory, color: result.color, pattern: result.pattern, fabric: result.fabric, season: result.season }));
-      setAiFields(['category', 'subcategory', 'color', 'pattern', 'fabric', 'season']);
+      setForm((old) => ({ ...old, category: result.category, subcategory: result.subcategory, color: result.color, colorDetail: result.colorDetail || '', pattern: result.pattern, fabric: result.fabric, season: result.season }));
+      setAiFields(['category', 'subcategory', 'color', 'colorDetail', 'pattern', 'fabric', 'season']);
+      // Pre-select whichever occasions the AI thinks this item fits — the person can still
+      // add or remove any of them below, this just saves re-clicking the obvious ones.
+      if (result.occasions?.length) setOccasionTags(result.occasions);
       if (result.invalidFields?.length) setError(`Please review ${result.invalidFields.join(', ')} — DripLy used a safe default.`);
     } catch (err) {
       // The AI couldn't identify this item — every field below is still fully editable,
@@ -147,14 +152,28 @@ export default function AddClothing() {
               <select value={form.category} onChange={(e) => set('category', e.target.value)} className={controlClass}>{options(categories)}</select>
             </Field>
             <Field label="Subcategory" ai={aiFields.includes('subcategory')}>
-              <select value={form.subcategory} onChange={(e) => set('subcategory', e.target.value)} className={controlClass}>
-                <option value="">Select subcategory</option>
-                {options(subcategoryOptions)}
-              </select>
+              <input
+                list="subcategory-suggestions"
+                value={form.subcategory}
+                onChange={(e) => set('subcategory', e.target.value)}
+                placeholder="e.g. Wide-leg jeans, Chelsea boots"
+                className={controlClass}
+              />
+              <datalist id="subcategory-suggestions">{subcategoryOptions.map((value) => <option key={value} value={value} />)}</datalist>
             </Field>
             <Field label="Color" ai={aiFields.includes('color')}>
               <select value={form.color} onChange={(e) => set('color', e.target.value)} className={controlClass}>{options(COLORS)}</select>
             </Field>
+            {form.color === 'MULTICOLOR' && (
+              <Field label="Which colors?" ai={aiFields.includes('colorDetail')}>
+                <input
+                  value={form.colorDetail}
+                  onChange={(e) => set('colorDetail', e.target.value)}
+                  placeholder="e.g. Black and white, navy with red trim"
+                  className={controlClass}
+                />
+              </Field>
+            )}
             <Field label="Pattern" ai={aiFields.includes('pattern')}>
               <select value={form.pattern} onChange={(e) => set('pattern', e.target.value)} className={controlClass}>{options(PATTERNS)}</select>
             </Field>

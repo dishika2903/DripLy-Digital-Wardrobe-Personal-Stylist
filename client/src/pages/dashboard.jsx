@@ -1,20 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Bell, CalendarDays, CheckCircle2, Footprints, Heart, Plus, Save, Shirt, Sparkles, Watch, WashingMachine, X } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle2, Footprints, Heart, Package, Plus, Save, Shirt, Sparkles, Watch, WashingMachine, X } from 'lucide-react';
 import { getWardrobe } from '../services/api/wardrobe';
 import { getAiOutfitSuggestions, getOutfitSuggestions, getSavedOutfits, saveOutfit } from '../services/api/outfits';
 import { useAuth } from '../context/AuthContext';
 import { OCCASIONS } from '../constants/categories';
-import { PantsIcon, DressIcon } from '../components/common/ClothingIcons';
+import { PantsIcon } from '../components/common/ClothingIcons';
 
 // Each category links to a pre-filtered wardrobe view (via query params) instead of always
-// dropping the user on the unfiltered "all items" page. Dresses aren't their own backend
-// category (they're OTHER + a subcategory), so that one links through the search filter instead.
+// dropping the user on the unfiltered "all items" page. "Other" covers dresses, sarees, suits,
+// and anything else that doesn't fit the other buckets — matched by actual category rather than
+// by guessing at subcategory keywords, since subcategory is free text.
 const categories = [
   { key: 'TOPS', label: 'Tops', icon: Shirt, tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300', href: '/wardrobe?category=TOPS' },
   { key: 'BOTTOMS', label: 'Bottoms', icon: PantsIcon, tone: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300', href: '/wardrobe?category=BOTTOMS' },
-  { key: 'DRESSES', label: 'Dresses', icon: DressIcon, tone: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300', href: '/wardrobe?category=OTHER&search=dress' },
+  { key: 'OTHER', label: 'Other', icon: Package, tone: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300', href: '/wardrobe?category=OTHER' },
   { key: 'FOOTWEAR', label: 'Shoes', icon: Footprints, tone: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300', href: '/wardrobe?category=FOOTWEAR' },
   { key: 'ACCESSORIES', label: 'Accessories', icon: Watch, tone: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-300', href: '/wardrobe?category=ACCESSORIES' },
 ];
@@ -137,7 +138,7 @@ export default function Dashboard() {
   const available = items.filter((item) => item.laundryStatus === 'AVAILABLE').length;
   const dirty = items.filter((item) => item.laundryStatus === 'DIRTY').length;
   const favorites = favoriteOutfitsData?.pagination?.total || 0;
-  const count = (key) => (key === 'DRESSES' ? items.filter((item) => ['Dress', 'Jumpsuit'].includes(item.subcategory)).length : items.filter((item) => item.category === key).length);
+  const count = (key) => items.filter((item) => item.category === key).length;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
   const openOutfit = openOutfitIndex !== null ? outfits[openOutfitIndex] : null;
@@ -273,7 +274,7 @@ export default function Dashboard() {
         </div>
       </section>
 
-      <section className="mt-9 grid gap-6 xl:grid-cols-[1.7fr_.7fr]">
+      <section className="mt-9 grid items-start gap-6 xl:grid-cols-[1.7fr_.7fr]">
         <div>
           <div className="flex items-center justify-between"><h2 className="text-xl font-black">My wardrobe</h2><Link to="/wardrobe" className="text-sm font-bold text-brand-purple-600">View all</Link></div>
           {isLoading ? (
@@ -288,19 +289,18 @@ export default function Dashboard() {
             </div>
           )}
         </div>
-        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
+        <div className="grid gap-5 self-start">
           <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-brand-purple-600" /><h2 className="font-black">Calendar</h2></div>
-            <p className="mt-5 text-sm text-slate-500">Plan outfits on specific dates in the upcoming planner.</p>
-          </div>
-          <div className="rounded-3xl border border-slate-100 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center gap-2"><WashingMachine className="h-5 w-5 text-brand-purple-600" /><h2 className="font-black">Laundry status</h2></div>
-            <div className="mt-5 flex items-center gap-5">
-              <div className="grid h-20 w-20 place-items-center rounded-full border-[10px] border-emerald-400"><strong>{available}</strong></div>
-              <div className="space-y-2 text-sm">
-                <p><span className="mr-2 inline-block h-2 w-2 rounded-full bg-emerald-400" />Clean <b className="ml-2">{available}</b></p>
-                <p><span className="mr-2 inline-block h-2 w-2 rounded-full bg-amber-400" />Dirty <b className="ml-2">{dirty}</b></p>
-              </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2"><WashingMachine className="h-5 w-5 text-brand-purple-600" /><h2 className="font-black">Laundry status</h2></div>
+              {dirty > 0 && <Link to="/wardrobe?laundryStatus=DIRTY" className="text-xs font-bold text-brand-purple-600">View dirty</Link>}
+            </div>
+            <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-amber-100 dark:bg-amber-950/40">
+              <div className="h-full rounded-full bg-emerald-400" style={{ width: `${available + dirty ? (available / (available + dirty)) * 100 : 100}%` }} />
+            </div>
+            <div className="mt-3 flex items-center justify-between text-sm">
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-400" />Clean <b className="ml-1">{available}</b></span>
+              <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Dirty <b className="ml-1">{dirty}</b></span>
             </div>
           </div>
         </div>
