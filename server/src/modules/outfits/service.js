@@ -42,14 +42,24 @@ const buildOutfits = (items, occasion) => {
   const bottoms = items.filter((item) => item.category === 'BOTTOMS');
   const shoes = items.filter((item) => item.category === 'FOOTWEAR');
   const layers = items.filter((item) => item.category === 'OUTERWEAR');
+  const accessories = items.filter((item) => item.category === 'ACCESSORIES');
   const completeLooks = items.filter(isCompleteLook);
   const suggestions = [];
   const occasionScore = (outfitItems) => outfitItems.reduce((sum, item) => sum + occasionBonus(item, occasion), 0);
+  // Pick at most one accessory per outfit — the best-scoring color/pattern match against the
+  // outfit's anchor piece — rather than piling on every accessory the user owns. Optional: an
+  // outfit with zero matching accessories (or none owned) is still returned as-is.
+  const bestAccessory = (anchor) => accessories.reduce((best, accessory) => {
+    const candidateScore = scorePair(anchor, accessory) + occasionBonus(accessory, occasion);
+    return !best || candidateScore > best.score ? { item: accessory, score: candidateScore } : best;
+  }, null);
 
   for (const look of completeLooks) {
     for (const shoe of shoes.length ? shoes : [null]) {
       const outfitItems = [look, shoe].filter(Boolean);
-      suggestions.push({ items: outfitItems, score: 8 + (shoe ? scorePair(look, shoe) : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
+      const accessory = bestAccessory(look);
+      if (accessory && accessory.score > 0) outfitItems.push(accessory.item);
+      suggestions.push({ items: outfitItems, score: 8 + (shoe ? scorePair(look, shoe) : 0) + (accessory ? accessory.score : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
     }
   }
   for (const top of tops) {
@@ -58,7 +68,9 @@ const buildOutfits = (items, occasion) => {
         const outfitItems = [top, bottom, shoe].filter(Boolean);
         const layer = layers.find((item) => scorePair(item, top) >= 1);
         if (layer) outfitItems.push(layer);
-        suggestions.push({ items: outfitItems, score: 10 + scorePair(top, bottom) + (shoe ? scorePair(bottom, shoe) : 0) + (layer ? 1 : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
+        const accessory = bestAccessory(top);
+        if (accessory && accessory.score > 0) outfitItems.push(accessory.item);
+        suggestions.push({ items: outfitItems, score: 10 + scorePair(top, bottom) + (shoe ? scorePair(bottom, shoe) : 0) + (layer ? 1 : 0) + (accessory ? accessory.score : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
       }
     }
   }
@@ -66,35 +78,51 @@ const buildOutfits = (items, occasion) => {
 };
 
 export const generateOutfits = async (userId, occasion, limit) => {
-  const [matchingItems, availableItems] = await Promise.all([
-    prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE', occasionTags: { has: occasion } }, orderBy: { createdAt: 'desc' } }),
-    prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, orderBy: { createdAt: 'desc' } }),
-  ]);
-  const matchingOutfits = buildOutfits(matchingItems, occasion);
-  if (matchingOutfits.length >= limit) return matchingOutfits.slice(0, limit);
+  const matchingItems = await prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE', occasionTags: { has: occasion } }, orderBy: { createdAt: 'desc' } });
+  const matchingOutfits = buildOutfits(matchingItems, occasion).slice(0, limit);
+  // If there's at least one real match, show only real matches — never pad a genuine set of
+  // occasion-tagged outfits with unrelated items just to hit a target count. Padding used to
+  // mix e.g. a random dress into "Sport/Athletic" results right alongside the real matches,
+  // with no meaningful way to tell which was which at a glance.
+  if (matchingOutfits.length > 0) return matchingOutfits;
 
-  const seen = new Set(matchingOutfits.map((outfit) => outfit.items.map((item) => item.id).sort().join(':')));
-  const fallbackMessage = `Only ${matchingOutfits.length ? `${matchingOutfits.length} ${occasion.toLowerCase()} look${matchingOutfits.length === 1 ? '' : 's'} ` : ''}could be made from your ${occasion.toLowerCase()} pieces. Showing other available options too.`;
-  const fallbackOutfits = buildOutfits(availableItems, occasion)
-    .filter((outfit) => !seen.has(outfit.items.map((item) => item.id).sort().join(':')))
+  // Only when there are truly zero occasion-tagged outfits do we fall back to showing other
+  // available clothes, and every one of those is clearly flagged via fallbackMessage so the
+  // frontend can label them as "not tagged for this occasion" rather than as real matches.
+  const availableItems = await prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, orderBy: { createdAt: 'desc' } });
+  const fallbackMessage = `You don't have any pieces tagged for ${occasion.toLowerCase().replace('_', ' ')} yet. Showing other available options instead — tag your clothes with occasions on the wardrobe page to get real matches here.`;
+  return buildOutfits(availableItems, occasion)
+    .slice(0, limit)
     .map((outfit) => ({ ...outfit, fallbackMessage }));
-  return [...matchingOutfits, ...fallbackOutfits].slice(0, limit);
 };
 
 const aiTimeout = (promise) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('AI request timed out')), 20000))]);
-const outfitResponseSchema = (ids) => z.object({ suggestions: z.array(z.object({ clothingItemIds: z.array(z.enum(ids)).min(2).max(6), aiReason: z.string().min(1).max(600) })).min(1).max(6) });
+// clothingItemIds intentionally is NOT validated against the real ID list here — a single bad
+// ID from the model used to fail the whole array via z.enum() and throw away every suggestion
+// in the response, even the valid ones. IDs are checked (and any suggestion referencing an
+// unknown one is dropped, not the whole batch) after parsing instead, in suggestOutfits below.
+// min(1) instead of min(2): a single piece can be a complete look (a dress, a saree, a
+// jumpsuit) — requiring at least 2 items rejected every one of those suggestions outright.
+const outfitResponseSchema = z.object({ suggestions: z.array(z.object({ clothingItemIds: z.array(z.string()).min(1).max(6), aiReason: z.string().min(1).max(600) })).min(1).max(6) });
 
 /** Ratings are prompt context only; this does not train or fine-tune a model. */
 export const suggestOutfits = async (userId, { occasion = 'CASUAL', prompt }) => {
-  const items = await prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, select: { id: true, category: true, subcategory: true, color: true, pattern: true, fabric: true, season: true, imageUrl: true } });
+  const items = await prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, select: { id: true, category: true, subcategory: true, color: true, colorDetail: true, pattern: true, fabric: true, season: true, occasionTags: true, imageUrl: true } });
   if (items.length < 2) return generateOutfits(userId, occasion, 6);
   const rated = await prisma.outfit.findMany({ where: { userId, aiRating: { not: null } }, orderBy: { updatedAt: 'desc' }, take: 10, include: { items: { include: { clothingItem: { select: { subcategory: true, color: true } } } } } });
   const feedback = rated.map((outfit) => `${outfit.aiRating === 1 ? 'Liked' : 'Disliked'}: ${outfit.items.map(({ clothingItem }) => `${clothingItem.color} ${clothingItem.subcategory}`).join(' + ')}`).join('; ') || 'No prior ratings.';
-  const request = `You are DripLy, a thoughtful stylist. Create ranked wearable outfits only from this user's exact wardrobe IDs. Consider silhouette/proportion, color harmony, the requested occasion, and the current month (${new Date().toLocaleString('en', { month: 'long' })}). Do not invent IDs. Occasion: ${occasion}. User request: ${prompt || 'No additional request.'}. Wardrobe: ${JSON.stringify(items.map(({ imageUrl, ...item }) => item))}. Lightweight preference context (not model training): ${feedback}. Return JSON {"suggestions":[{"clothingItemIds":["real-id"],"aiReason":"..."}]}.`;
+  const request = `You are DripLy, a thoughtful stylist. Create ranked wearable outfits only from this user's exact wardrobe IDs. A single item CAN be a complete outfit on its own (a dress, saree, jumpsuit, gown, or suit) — don't force a top+bottom pairing when one full-look piece already works, though adding shoes/accessories on top of it is great when available. Consider silhouette/proportion, color harmony, the requested occasion, and the current month (${new Date().toLocaleString('en', { month: 'long' })}). Do not invent IDs — only use "id" values exactly as given below. Occasion: ${occasion}. User request: ${prompt || 'No additional request.'}. Wardrobe: ${JSON.stringify(items.map(({ imageUrl, ...item }) => item))}. Lightweight preference context (not model training): ${feedback}. Return JSON {"suggestions":[{"clothingItemIds":["real-id"],"aiReason":"..."}]}.`;
   try {
     const response = await aiTimeout(ai.models.generateContent({ model: GEMINI_MODEL, contents: request, config: { responseMimeType: 'application/json' } }));
-    const parsed = outfitResponseSchema(items.map((item) => item.id)).parse(JSON.parse(response.text));
-    return parsed.suggestions.map((suggestion) => ({ ...suggestion, source: 'ai', items: suggestion.clothingItemIds.map((id) => items.find((item) => item.id === id)) }));
+    const parsed = outfitResponseSchema.parse(JSON.parse(response.text));
+    const knownIds = new Set(items.map((item) => item.id));
+    const suggestions = parsed.suggestions
+      // Drop any suggestion that references an ID that doesn't exist (hallucinated or stale)
+      // rather than failing the entire response over one bad suggestion.
+      .filter((suggestion) => suggestion.clothingItemIds.every((id) => knownIds.has(id)))
+      .map((suggestion) => ({ ...suggestion, source: 'ai', items: suggestion.clothingItemIds.map((id) => items.find((item) => item.id === id)) }));
+    if (!suggestions.length) throw new Error('Gemini returned no suggestions with valid item IDs');
+    return suggestions;
   } catch (error) {
     // AI outages and hallucinated IDs degrade to the existing deterministic generator, but log
     // the real reason (bad API key, wrong model name, quota, timeout, schema mismatch, etc.) —

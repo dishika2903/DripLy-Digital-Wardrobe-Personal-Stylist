@@ -129,6 +129,7 @@ export default function Dashboard() {
   const outfits = aiMutation.data?.data ?? ruleOutfits;
   const isAiResult = Boolean(aiMutation.data);
   const isLoadingOutfits = isAiResult ? aiMutation.isPending : outfitsLoading;
+  const isFallbackOnly = outfits.length > 0 && outfits.every((outfit) => outfit.fallbackMessage);
 
   const saveSuggestion = (outfit, index) => {
     setSavingIndex(index);
@@ -193,7 +194,7 @@ export default function Dashboard() {
 
       <section className="mt-7 grid gap-4 sm:grid-cols-3">
         <Stat icon={Shirt} label="My wardrobe" value={total} caption="Items" tone="bg-brand-purple-50 text-brand-purple-600 dark:bg-brand-purple-950/50 dark:text-brand-purple-300" />
-        <Stat icon={Sparkles} label="Outfit ideas" value={outfits.length} caption={`${occasionLabel(occasion)} suggestions`} tone="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300" />
+        <Stat icon={Sparkles} label="Outfit ideas" value={isFallbackOnly ? 0 : outfits.length} caption={`${occasionLabel(occasion)} suggestions`} tone="bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300" />
         <Stat icon={Heart} label="Favorites" value={favorites} caption="Favorite looks" tone="bg-rose-50 text-rose-500 dark:bg-rose-950/50 dark:text-rose-300" />
       </section>
 
@@ -220,12 +221,19 @@ export default function Dashboard() {
         {saveMutation.isError && (
           <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">{saveMutation.error?.response?.data?.error?.message || 'Could not save this outfit. Please try again.'}</div>
         )}
-        {outfits.find((outfit) => outfit.fallbackMessage)?.fallbackMessage && (
-          <div className="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800 dark:bg-amber-950/30 dark:text-amber-200">{outfits.find((outfit) => outfit.fallbackMessage).fallbackMessage}</div>
-        )}
 
         {isLoadingOutfits ? (
           <div className="mt-4 h-52 animate-pulse rounded-3xl bg-slate-200 dark:bg-slate-800" />
+        ) : isFallbackOnly ? (
+          <div className="mt-4 rounded-3xl border border-dashed border-amber-200 bg-amber-50/60 p-7 dark:border-amber-900 dark:bg-amber-950/20">
+            <Sparkles className="h-6 w-6 text-amber-600" />
+            <h3 className="mt-3 font-black">No {occasionLabel(occasion).toLowerCase()} pieces yet</h3>
+            <p className="mt-1 max-w-xl text-sm text-slate-500">{outfits[0].fallbackMessage}</p>
+            <div className="mt-4 flex flex-wrap gap-4">
+              <Link to={`/wardrobe?occasion=${occasion}`} className="text-sm font-bold text-brand-purple-700 dark:text-brand-purple-300">Tag existing clothes</Link>
+              <Link to="/wardrobe/add" className="text-sm font-bold text-brand-purple-700 dark:text-brand-purple-300">Add new clothing</Link>
+            </div>
+          </div>
         ) : outfits.length ? (
           <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {outfits.map((outfit, index) => (
@@ -235,7 +243,11 @@ export default function Dashboard() {
                     {outfit.items.slice(0, 3).map((item) => <img key={item.id} src={item.imageUrl} alt={item.subcategory} className="aspect-square w-full object-cover" />)}
                   </div>
                   <div className="p-4 pb-0">
-                    <h3 className="font-black">{occasionLabel(occasion)} look {index + 1}</h3>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-black">{occasionLabel(occasion)} look {index + 1}</h3>
+                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">{occasionLabel(occasion)}-ready</span>
+                      {outfit.source === 'ai' && <span className="rounded-full bg-brand-purple-50 px-2 py-0.5 text-[10px] font-bold text-brand-purple-700 dark:bg-brand-purple-950/40 dark:text-brand-purple-300">✨ AI styled</span>}
+                    </div>
                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{outfit.aiReason}</p>
                   </div>
                 </button>

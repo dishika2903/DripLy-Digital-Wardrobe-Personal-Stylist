@@ -18,8 +18,9 @@ export default function Wardrobe() {
     category: searchParams.get('category') || '',
     search: searchParams.get('search') || '',
     laundryStatus: searchParams.get('laundryStatus') || '',
+    occasion: searchParams.get('occasion') || '',
   }));
-  const [showFilters, setShowFilters] = useState(() => Boolean(searchParams.get('category') || searchParams.get('laundryStatus')));
+  const [showFilters, setShowFilters] = useState(() => Boolean(searchParams.get('category') || searchParams.get('laundryStatus') || searchParams.get('occasion')));
   const update = (key, value) => setFilters((current) => ({ ...current, [key]: value, page: key === 'page' ? value : 1 }));
   const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value !== ''));
   const { data, isLoading, isFetching } = useQuery({ queryKey: ['wardrobe', filters], queryFn: () => getWardrobe(params), placeholderData: (previous) => previous });
