@@ -20,6 +20,9 @@ export const saveOutfitSchema = z.object({
     .refine((ids) => new Set(ids).size === ids.length, 'Clothing items must be unique'),
   aiReason: z.string().trim().min(1, 'Outfit reasoning is required').max(1000),
   weatherTag: z.string().trim().max(100).optional().nullable(),
+  // Lets the frontend save + favorite a suggestion in a single request, instead of requiring
+  // a plain save first and a separate favorite toggle afterward on the My Outfits page.
+  isFavorite: z.boolean().optional().default(false),
 });
 
 export const savedOutfitsQuerySchema = z.object({

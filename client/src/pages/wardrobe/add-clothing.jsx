@@ -108,6 +108,8 @@ export default function AddClothing() {
       occasionTags.forEach((tag) => data.append('occasionTags', tag));
       const response = await createClothingItem(data);
       await queryClient.invalidateQueries({ queryKey: ['wardrobe'] });
+      await queryClient.invalidateQueries({ queryKey: ['outfits'] });
+      await queryClient.invalidateQueries({ queryKey: ['account-summary'] });
       navigate(`/wardrobe/${response.data.id}`);
     } catch (err) {
       setError(err.response?.data?.error?.message || 'We could not add this item.');

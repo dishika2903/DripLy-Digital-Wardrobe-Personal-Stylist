@@ -30,6 +30,8 @@ export default function ClothingDetails() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe'] });
+      queryClient.invalidateQueries({ queryKey: ['outfits'] });
+      queryClient.invalidateQueries({ queryKey: ['account-summary'] });
       navigate('/wardrobe');
     },
     onError: (err) => {
@@ -55,12 +57,12 @@ export default function ClothingDetails() {
         <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 p-6 rounded-3xl border border-rose-200 text-center max-w-sm">
           <AlertCircle className="h-10 w-10 mx-auto text-rose-500 mb-4" />
           <h3 className="font-bold text-lg mb-2">Item Not Found</h3>
-          <p className="text-xs mb-6 text-slate-505 dark:text-rose-450/80">
+          <p className="text-xs mb-6 text-slate-500 dark:text-rose-500/80">
             {error.response?.data?.error?.message || 'We could not load this clothing item.'}
           </p>
           <Link
             to="/wardrobe"
-            className="px-6 py-3 bg-brand-purple-650 hover:bg-brand-purple-700 text-white font-bold rounded-2xl transition-all"
+            className="px-6 py-3 bg-brand-purple-600 hover:bg-brand-purple-700 text-white font-bold rounded-2xl transition-all"
           >
             Back to Closet
           </Link>
@@ -79,7 +81,7 @@ export default function ClothingDetails() {
         {/* Navigation Toolbar */}
         <div className="mb-6 flex justify-between items-center">
           <Link
-            to="/profile"
+            to="/wardrobe"
             className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -88,14 +90,14 @@ export default function ClothingDetails() {
           <div className="flex gap-2">
             <Link
               to={`/wardrobe/edit/${id}`}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-650 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 transition-all cursor-pointer"
             >
               <Edit2 className="h-3.5 w-3.5" />
               <span>Edit Details</span>
             </Link>
             <button
               onClick={() => setDeleteConfirm(true)}
-              className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/45 dark:text-rose-450 font-bold text-xs rounded-xl border border-rose-100 dark:border-rose-900/30 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/20 dark:hover:bg-rose-950/45 dark:text-rose-500 font-bold text-xs rounded-xl border border-rose-100 dark:border-rose-900/30 transition-all cursor-pointer"
             >
               <Trash2 className="h-3.5 w-3.5" />
               <span>Delete</span>
@@ -112,13 +114,13 @@ export default function ClothingDetails() {
               className="bg-white dark:bg-brand-neutral-cardDark p-6 rounded-3xl shadow-soft-lg max-w-sm w-full border border-slate-100 dark:border-slate-800"
             >
               <h3 className="font-bold text-lg text-slate-800 dark:text-white mb-2">Delete Clothing Item?</h3>
-              <p className="text-sm text-slate-505 dark:text-slate-400 mb-6 leading-relaxed">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
                 This action is permanent and cannot be undone. All references to this item in outfits will be deleted.
               </p>
               <div className="flex gap-4">
                 <button
                   onClick={() => setDeleteConfirm(false)}
-                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-705 dark:text-slate-250 font-bold rounded-xl text-sm transition-all"
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-sm transition-all"
                 >
                   Cancel
                 </button>
@@ -159,7 +161,7 @@ export default function ClothingDetails() {
             <div className="relative aspect-[3/4] bg-slate-50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/50 rounded-3xl overflow-hidden shadow-sm">
               <img src={item.imageUrl} alt={item.subcategory} className="w-full h-full object-cover" />
               {item.isFavorite && (
-                <div className="absolute top-4 right-4 bg-white/95 dark:bg-slate-900/90 p-2.5 rounded-full text-rose-550 shadow-sm border border-slate-100/55 dark:border-slate-800/40">
+                <div className="absolute top-4 right-4 bg-white/95 dark:bg-slate-900/90 p-2.5 rounded-full text-rose-500 shadow-sm border border-slate-100/55 dark:border-slate-800/40">
                   <Heart className="h-5 w-5 fill-rose-500 text-rose-500" />
                 </div>
               )}
@@ -169,10 +171,10 @@ export default function ClothingDetails() {
             <div className="space-y-6 flex flex-col justify-between">
               <div className="text-left space-y-4">
                 <div>
-                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-brand-purple-550 dark:text-brand-purple-400">
+                  <span className="text-[10px] uppercase font-extrabold tracking-widest text-brand-purple-500 dark:text-brand-purple-400">
                     {item.category}
                   </span>
-                  <h2 className="text-3xl font-black text-slate-850 dark:text-white mt-1 leading-tight">
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white mt-1 leading-tight">
                     {item.subcategory}
                   </h2>
                 </div>
@@ -193,7 +195,7 @@ export default function ClothingDetails() {
                 {/* Technical Specifications */}
                 <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-sm text-slate-600 dark:text-slate-400">
                   <div className="flex items-center gap-2">
-                    <Tag className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                    <Tag className="h-4 w-4 text-slate-400 shrink-0" />
                     <div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold block">
                         Color
@@ -203,7 +205,7 @@ export default function ClothingDetails() {
                           className="w-3.5 h-3.5 rounded-full border border-slate-200 dark:border-slate-800 block shadow-sm"
                           style={{ background: colorData?.gradient || colorData?.hex }}
                         ></span>
-                        <span className="font-semibold text-slate-700 dark:text-slate-250">
+                        <span className="font-semibold text-slate-700 dark:text-slate-200">
                           {colorData?.label || item.color}{item.colorDetail ? ` — ${item.colorDetail}` : ''}
                         </span>
                       </div>
@@ -211,12 +213,12 @@ export default function ClothingDetails() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Shirt className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                    <Shirt className="h-4 w-4 text-slate-400 shrink-0" />
                     <div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold block">
                         Fabric & Pattern
                       </span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-250 block mt-0.5">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 block mt-0.5">
                         {item.pattern.charAt(0) + item.pattern.slice(1).toLowerCase()},{' '}
                         {item.fabric.charAt(0) + item.fabric.slice(1).toLowerCase()}
                       </span>
@@ -224,24 +226,24 @@ export default function ClothingDetails() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Calendar className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                    <Calendar className="h-4 w-4 text-slate-400 shrink-0" />
                     <div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold block">
                         Season
                       </span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-250 block mt-0.5">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 block mt-0.5">
                         {item.season.charAt(0) + item.season.slice(1).toLowerCase().replace('_', ' ')}
                       </span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Sparkles className="h-4.5 w-4.5 text-slate-400 shrink-0" />
+                    <Sparkles className="h-4 w-4 text-slate-400 shrink-0" />
                     <div>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold block">
                         Brand
                       </span>
-                      <span className="font-semibold text-slate-700 dark:text-slate-250 block mt-0.5">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200 block mt-0.5">
                         {item.brand || 'No Brand'}
                       </span>
                     </div>
@@ -259,7 +261,7 @@ export default function ClothingDetails() {
                     {item.occasionTags?.map((tag) => (
                       <span
                         key={tag}
-                        className="px-3 py-1 bg-slate-50 dark:bg-slate-900/35 border border-slate-150 dark:border-slate-800 text-[11px] font-bold text-slate-650 dark:text-slate-350 rounded-lg shadow-sm"
+                        className="px-3 py-1 bg-slate-50 dark:bg-slate-900/35 border border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300 rounded-lg shadow-sm"
                       >
                         {tag.charAt(0) + tag.slice(1).toLowerCase()}
                       </span>
@@ -277,11 +279,11 @@ export default function ClothingDetails() {
 
               {/* Notes textarea display */}
               {item.notes && (
-                <div className="bg-slate-50/70 dark:bg-slate-900/15 border border-slate-150 dark:border-slate-800/40 p-4 rounded-2xl text-left text-sm mt-4">
+                <div className="bg-slate-50/70 dark:bg-slate-900/15 border border-slate-200 dark:border-slate-800/40 p-4 rounded-2xl text-left text-sm mt-4">
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold block mb-1">
                     Notes
                   </span>
-                  <p className="text-slate-650 dark:text-slate-300 leading-relaxed font-medium italic">
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium italic">
                     "{item.notes}"
                   </p>
                 </div>

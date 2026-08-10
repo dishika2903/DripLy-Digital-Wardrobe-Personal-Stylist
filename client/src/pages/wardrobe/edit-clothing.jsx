@@ -144,6 +144,8 @@ export default function EditClothing() {
       if (res?.success) {
         await queryClient.invalidateQueries({ queryKey: ['wardrobe'] });
         await queryClient.invalidateQueries({ queryKey: ['clothingItem', id] });
+        await queryClient.invalidateQueries({ queryKey: ['outfits'] });
+        await queryClient.invalidateQueries({ queryKey: ['account-summary'] });
         navigate(`/wardrobe/${id}`);
       } else {
         setServerError(res?.error?.message || 'Failed to update clothing item.');
@@ -172,12 +174,12 @@ export default function EditClothing() {
         <div className="bg-rose-50 dark:bg-rose-950/20 text-rose-600 p-6 rounded-3xl border border-rose-200 text-center max-w-sm">
           <AlertCircle className="h-10 w-10 mx-auto text-rose-500 mb-4" />
           <h3 className="font-bold text-lg mb-2">Error Loading Item</h3>
-          <p className="text-xs mb-6 text-slate-505 dark:text-rose-400/80">
+          <p className="text-xs mb-6 text-slate-500 dark:text-rose-400/80">
             {fetchError.response?.data?.error?.message || 'We could not find the clothing item requested.'}
           </p>
           <Link
             to="/profile"
-            className="px-6 py-3 bg-brand-purple-650 hover:bg-brand-purple-700 text-white font-bold rounded-2xl transition-all"
+            className="px-6 py-3 bg-brand-purple-600 hover:bg-brand-purple-700 text-white font-bold rounded-2xl transition-all"
           >
             Back to Profile
           </Link>
@@ -200,7 +202,7 @@ export default function EditClothing() {
           </Link>
           <div className="flex items-center gap-1.5">
             <Sparkles className="h-5 w-5 text-brand-purple-500" />
-            <span className="font-bold text-sm bg-gradient-to-r from-brand-purple-650 to-brand-pink-500 bg-clip-text text-transparent">
+            <span className="font-bold text-sm bg-gradient-to-r from-brand-purple-600 to-brand-pink-500 bg-clip-text text-transparent">
               Edit Clothing
             </span>
           </div>
@@ -286,7 +288,7 @@ export default function EditClothing() {
                     <datalist id="edit-subcategory-suggestions">
                       {selectedCategory && CATEGORY_MAP[selectedCategory]?.map((sub) => <option key={sub} value={sub} />)}
                     </datalist>
-                    {errors.subcategory && <p className="mt-1 text-xs text-rose-505 font-medium">{errors.subcategory.message}</p>}
+                    {errors.subcategory && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.subcategory.message}</p>}
                   </div>
                 </div>
 
@@ -295,6 +297,7 @@ export default function EditClothing() {
                   <label className="block text-xs uppercase tracking-widest font-extrabold text-slate-400 dark:text-slate-500 mb-3">
                     Color
                   </label>
+                  <input type="hidden" {...register('color')} />
                   <div className="flex flex-wrap gap-2">
                     {COLORS.map((col) => (
                       <button
@@ -304,13 +307,13 @@ export default function EditClothing() {
                         className={`w-9 h-9 rounded-full flex items-center justify-center relative shadow-sm border transition-all ${
                           selectedColor === col.value
                             ? 'scale-110 ring-2 ring-brand-purple-500 border-transparent'
-                            : 'border-slate-200 dark:border-slate-850 hover:scale-105'
+                            : 'border-slate-200 dark:border-slate-900 hover:scale-105'
                         }`}
                         style={{ background: col.gradient || col.hex }}
                         title={col.label}
                       >
                         {selectedColor === col.value && (
-                          <Check className={`h-4.5 w-4.5 ${col.value === 'WHITE' ? 'text-black' : 'text-white'}`} />
+                          <Check className={`h-4 w-4 ${col.value === 'WHITE' ? 'text-black' : 'text-white'}`} />
                         )}
                       </button>
                     ))}
@@ -365,7 +368,7 @@ export default function EditClothing() {
                         </option>
                       ))}
                     </select>
-                    {errors.pattern && <p className="mt-1 text-xs text-rose-505 font-medium">{errors.pattern.message}</p>}
+                    {errors.pattern && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.pattern.message}</p>}
                   </div>
 
                   <div>
@@ -383,7 +386,7 @@ export default function EditClothing() {
                         </option>
                       ))}
                     </select>
-                    {errors.season && <p className="mt-1 text-xs text-rose-505 font-medium">{errors.season.message}</p>}
+                    {errors.season && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.season.message}</p>}
                   </div>
                 </div>
 
@@ -397,7 +400,7 @@ export default function EditClothing() {
                       type="text"
                       placeholder="Zara, Levi's..."
                       {...register('brand')}
-                      className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-805 dark:text-slate-200 text-sm"
+                      className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm"
                     />
                   </div>
 
@@ -408,7 +411,7 @@ export default function EditClothing() {
                     <input
                       type="date"
                       {...register('purchaseDate')}
-                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-805 dark:text-slate-200 text-sm"
+                      className="w-full px-4 py-3 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm"
                     />
                   </div>
                 </div>
@@ -467,7 +470,7 @@ export default function EditClothing() {
                   type="text"
                   placeholder="Fits oversized, vintage find..."
                   {...register('notes')}
-                  className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-805 dark:text-slate-200 text-sm"
+                  className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm"
                 />
               </div>
             </div>
@@ -476,7 +479,7 @@ export default function EditClothing() {
             <div className="flex gap-4 border-t border-slate-100 dark:border-slate-800/50 pt-6">
               <Link
                 to={`/wardrobe/${id}`}
-                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-250 font-bold rounded-2xl text-center transition-all border border-slate-250/20 dark:border-slate-700/30 text-sm cursor-pointer"
+                className="flex-1 py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-200 font-bold rounded-2xl text-center transition-all border border-slate-200/20 dark:border-slate-700/30 text-sm cursor-pointer"
               >
                 Cancel
               </Link>

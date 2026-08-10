@@ -59,7 +59,7 @@ const buildOutfits = (items, occasion) => {
       const outfitItems = [look, shoe].filter(Boolean);
       const accessory = bestAccessory(look);
       if (accessory && accessory.score > 0) outfitItems.push(accessory.item);
-      suggestions.push({ items: outfitItems, score: 8 + (shoe ? scorePair(look, shoe) : 0) + (accessory ? accessory.score : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
+      suggestions.push({ items: outfitItems, score: 8 + (shoe ? scorePair(look, shoe) : 0) + (accessory ? scorePair(look, accessory.item) : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
     }
   }
   for (const top of tops) {
@@ -70,7 +70,7 @@ const buildOutfits = (items, occasion) => {
         if (layer) outfitItems.push(layer);
         const accessory = bestAccessory(top);
         if (accessory && accessory.score > 0) outfitItems.push(accessory.item);
-        suggestions.push({ items: outfitItems, score: 10 + scorePair(top, bottom) + (shoe ? scorePair(bottom, shoe) : 0) + (layer ? 1 : 0) + (accessory ? accessory.score : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
+        suggestions.push({ items: outfitItems, score: 10 + scorePair(top, bottom) + (shoe ? scorePair(bottom, shoe) : 0) + (layer ? 1 : 0) + (accessory ? scorePair(top, accessory.item) : 0) + occasionScore(outfitItems), aiReason: reasonFor(outfitItems, occasion) });
       }
     }
   }
@@ -108,12 +108,29 @@ const outfitResponseSchema = z.object({ suggestions: z.array(z.object({ clothing
 /** Ratings are prompt context only; this does not train or fine-tune a model. */
 export const suggestOutfits = async (userId, { occasion = 'CASUAL', prompt }) => {
   const items = await prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, select: { id: true, category: true, subcategory: true, color: true, colorDetail: true, pattern: true, fabric: true, season: true, occasionTags: true, imageUrl: true } });
-  if (items.length < 2) return generateOutfits(userId, occasion, 6);
+  // Not enough wardrobe items for the AI to work with is a different situation from the AI
+  // actually failing — tag it distinctly (aiUnavailableReason) so the frontend doesn't tell
+  // the user "DripLy AI was unavailable" when the real issue is just a small wardrobe.
+  if (items.length < 2) {
+    const fallback = await generateOutfits(userId, occasion, 6);
+    return fallback.map((outfit) => ({ ...outfit, aiUnavailableReason: 'insufficient_wardrobe' }));
+  }
   const rated = await prisma.outfit.findMany({ where: { userId, aiRating: { not: null } }, orderBy: { updatedAt: 'desc' }, take: 10, include: { items: { include: { clothingItem: { select: { subcategory: true, color: true } } } } } });
   const feedback = rated.map((outfit) => `${outfit.aiRating === 1 ? 'Liked' : 'Disliked'}: ${outfit.items.map(({ clothingItem }) => `${clothingItem.color} ${clothingItem.subcategory}`).join(' + ')}`).join('; ') || 'No prior ratings.';
-  const request = `You are DripLy, a thoughtful stylist. Create ranked wearable outfits only from this user's exact wardrobe IDs. A single item CAN be a complete outfit on its own (a dress, saree, jumpsuit, gown, or suit) — don't force a top+bottom pairing when one full-look piece already works, though adding shoes/accessories on top of it is great when available. Consider silhouette/proportion, color harmony, the requested occasion, and the current month (${new Date().toLocaleString('en', { month: 'long' })}). Do not invent IDs — only use "id" values exactly as given below. Occasion: ${occasion}. User request: ${prompt || 'No additional request.'}. Wardrobe: ${JSON.stringify(items.map(({ imageUrl, ...item }) => item))}. Lightweight preference context (not model training): ${feedback}. Return JSON {"suggestions":[{"clothingItemIds":["real-id"],"aiReason":"..."}]}.`;
+  const request = `You are DripLy, a thoughtful stylist. Create ranked wearable outfits only from this user's exact wardrobe IDs.
+A single item CAN be a complete outfit on its own (a dress, saree, jumpsuit, gown, or suit) — don't force a top+bottom pairing when one full-look piece already works, though adding shoes/accessories on top of it is great when available.
+Consider silhouette/proportion, color harmony, the requested occasion, and the current month (${new Date().toLocaleString('en', { month: 'long' })}).
+Prioritize the user's specific request text over generic occasion matching when the two could pull in different directions — the free-text request is what the user actually asked for right now.
+Vary the pieces used across the different suggestions where the wardrobe allows it — don't reuse the exact same top or bottom in every single suggestion if reasonable alternatives exist; only repeat a piece when there's genuinely no better-fitting alternative available.
+Write each aiReason as a short, specific styling note (why these pieces work together for this occasion/request) rather than a generic restatement of the item list.
+If the wardrobe is small enough that one pairing is clearly the strongest fit, it's fine for your top suggestion to match what a simple rules-based stylist would also pick — don't force a worse combination just to look different. In that case, make the aiReason earn its place: reference the specific request/occasion/season reasoning a simple matcher wouldn't produce, not just a restatement of "these go together."
+Do not invent IDs — only use "id" values exactly as given below.
+Occasion: ${occasion}. User request: ${prompt || 'No additional request.'}.
+Wardrobe: ${JSON.stringify(items.map(({ imageUrl, ...item }) => item))}.
+Lightweight preference context (not model training): ${feedback}.
+Return JSON {"suggestions":[{"clothingItemIds":["real-id"],"aiReason":"..."}]}.`;
   try {
-    const response = await aiTimeout(ai.models.generateContent({ model: GEMINI_MODEL, contents: request, config: { responseMimeType: 'application/json' } }));
+    const response = await aiTimeout(ai.models.generateContent({ model: GEMINI_MODEL, contents: request, config: { responseMimeType: 'application/json', temperature: 0.9 } }));
     const parsed = outfitResponseSchema.parse(JSON.parse(response.text));
     const knownIds = new Set(items.map((item) => item.id));
     const suggestions = parsed.suggestions
@@ -129,7 +146,8 @@ export const suggestOutfits = async (userId, { occasion = 'CASUAL', prompt }) =>
     // previously this was a bare `catch {}` so every AI failure was invisible and looked
     // identical to "AI is just giving generic guesses" from the user's side.
     logger.error({ err: error, occasion, prompt, model: GEMINI_MODEL }, 'Gemini suggestOutfits failed, degrading to rule-based generator');
-    return generateOutfits(userId, occasion, 6);
+    const fallback = await generateOutfits(userId, occasion, 6);
+    return fallback.map((outfit) => ({ ...outfit, aiUnavailableReason: 'ai_error' }));
   }
 };
 
@@ -145,6 +163,9 @@ const notFoundError = () => {
 };
 
 export const saveOutfit = async (userId, data) => {
+  // See the timeout note on the signup transaction in auth/service.js — same reasoning here:
+  // this transaction does up to 3 sequential round trips (ownership check, outfit create,
+  // favorite create), which is enough to occasionally exceed Prisma's 5s default against Neon.
   return prisma.$transaction(async (tx) => {
     const ownedItems = await tx.clothingItem.findMany({
       where: { id: { in: data.clothingItemIds }, userId },
@@ -153,17 +174,27 @@ export const saveOutfit = async (userId, data) => {
 
     if (ownedItems.length !== data.clothingItemIds.length) throw notFoundError();
 
-    return tx.outfit.create({
+    const outfit = await tx.outfit.create({
       data: {
         userId,
         occasion: data.occasion,
         aiReason: data.aiReason,
         weatherTag: data.weatherTag || null,
+        isFavorite: Boolean(data.isFavorite),
         items: { create: data.clothingItemIds.map((clothingItemId) => ({ clothingItemId })) },
       },
       include: outfitWithItems,
     });
-  });
+
+    // Saving and favoriting used to be two separate requests (save, then a follow-up
+    // PATCH .../favorite) — a suggestion couldn't be favorited until it existed as a saved
+    // row. Creating the Favorite record here, in the same transaction as the outfit, lets a
+    // suggestion be favorited directly without a prior save step, and keeps outfit.isFavorite
+    // and the Favorite table consistent from the moment the outfit is created.
+    if (data.isFavorite) await tx.favorite.create({ data: { userId, outfitId: outfit.id } });
+
+    return outfit;
+  }, { timeout: 15000 });
 };
 
 export const getSavedOutfits = async (userId, filters = {}) => {
@@ -202,7 +233,7 @@ export const setOutfitFavorite = async (outfitId, userId, isFavorite) => {
       data: { isFavorite },
       include: outfitWithItems,
     });
-  });
+  }, { timeout: 15000 });
 };
 
 export const setOutfitRating = async (outfitId, userId, aiRating) => {

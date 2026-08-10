@@ -1,5 +1,6 @@
 import logger from '../utils/logger.js';
 import { z } from 'zod';
+import env from '../config/env.js';
 
 export default function errorHandler(err, req, res, next) {
   logger.error(err, 'Unhandled exception caught by error handler');
@@ -55,13 +56,13 @@ export default function errorHandler(err, req, res, next) {
         // Never leak raw Prisma internals in production, but in dev this is the fastest way
         // to tell "wrong enum value" apart from "connection dropped" apart from "unique
         // constraint" without re-reading server logs for every failed request.
-        ...(process.env.NODE_ENV !== 'production' ? { debug: { prismaCode: err.code, prismaMessage: err.message } } : {}),
+        ...(env.NODE_ENV !== 'production' ? { debug: { prismaCode: err.code, prismaMessage: err.message } } : {}),
       },
     });
   }
 
   const statusCode = err.status || err.statusCode || 500;
-  const message = statusCode === 500 && process.env.NODE_ENV === 'production'
+  const message = statusCode === 500 && env.NODE_ENV === 'production'
     ? 'Internal Server Error'
     : err.message || 'An unexpected error occurred';
 

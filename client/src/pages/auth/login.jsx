@@ -89,7 +89,7 @@ export default function Login() {
                 Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-450 dark:text-slate-550">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                   <Mail className="h-5 w-5" />
                 </div>
                 <input
@@ -123,7 +123,7 @@ export default function Login() {
                 </Link>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-455 dark:text-slate-555">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                   <Lock className="h-5 w-5" />
                 </div>
                 <input
@@ -161,7 +161,7 @@ export default function Login() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-slate-505 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Don't have an account?{' '}
               <Link
                 to="/signup"

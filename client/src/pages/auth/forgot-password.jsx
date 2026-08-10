@@ -54,7 +54,7 @@ export default function ForgotPassword() {
         <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
           Reset password
         </h2>
-        <p className="mt-2 text-sm text-slate-505 dark:text-slate-400">
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           We will help you regain access to your wardrobe.
         </p>
       </motion.div>
@@ -72,11 +72,11 @@ export default function ForgotPassword() {
                 <CheckCircle className="h-12 w-12" />
               </div>
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Request Received</h3>
-              <p className="text-sm text-slate-505 dark:text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 If that email is registered on DripLy, a recovery link has been generated.
               </p>
               <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl text-xs text-left border border-slate-100 dark:border-slate-800/50 text-slate-500">
-                <span className="font-bold text-slate-700 dark:text-slate-350 block mb-1">💡 Sandbox Info</span>
+                <span className="font-bold text-slate-700 dark:text-slate-300 block mb-1">💡 Sandbox Info</span>
                 The password reset link was logged to the **Node.js Express console**! Copy it from there to proceed with resetting your password.
               </div>
               <div className="pt-4">
@@ -98,7 +98,7 @@ export default function ForgotPassword() {
               )}
 
               <div>
-                <label htmlFor="email" className="block text-xs uppercase tracking-widest font-extrabold text-slate-450 dark:text-slate-500 mb-2">
+                <label htmlFor="email" className="block text-xs uppercase tracking-widest font-extrabold text-slate-400 dark:text-slate-500 mb-2">
                   Email Address
                 </label>
                 <div className="relative">
@@ -134,7 +134,7 @@ export default function ForgotPassword() {
               <div className="text-center mt-4">
                 <Link
                   to="/login"
-                  className="font-bold text-slate-505 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-350 text-xs"
+                  className="font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300 text-xs"
                 >
                   Back to Sign In
                 </Link>

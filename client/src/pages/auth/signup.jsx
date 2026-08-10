@@ -76,7 +76,7 @@ export default function Signup() {
         <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
           Create your account
         </h2>
-        <p className="mt-2 text-sm text-slate-505 dark:text-slate-400">
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Build your digital wardrobe in seconds.
         </p>
       </motion.div>
@@ -105,7 +105,7 @@ export default function Signup() {
                 Full Name
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-450 dark:text-slate-550">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                   <User className="h-5 w-5" />
                 </div>
                 <input
@@ -142,7 +142,7 @@ export default function Signup() {
                 Email Address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-450 dark:text-slate-550">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                   <Mail className="h-5 w-5" />
                 </div>
                 <input
@@ -168,7 +168,7 @@ export default function Signup() {
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-455 dark:text-slate-555">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 dark:text-slate-500">
                   <Lock className="h-5 w-5" />
                 </div>
                 <input
@@ -182,7 +182,7 @@ export default function Signup() {
                 />
               </div>
               {errors.password && (
-                <p className="mt-1.5 text-xs text-rose-505 flex items-center gap-1 font-semibold">
+                <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1 font-semibold">
                   <AlertCircle className="h-3.5 w-3.5" />
                   {errors.password.message}
                 </p>
@@ -206,7 +206,7 @@ export default function Signup() {
           </form>
 
           <div className="mt-6 text-center">
-            <p className="text-xs text-slate-505 dark:text-slate-400">
+            <p className="text-xs text-slate-500 dark:text-slate-400">
               Already have an account?{' '}
               <Link
                 to="/login"

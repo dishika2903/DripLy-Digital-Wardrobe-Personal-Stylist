@@ -1,9 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Bell, CheckCircle2, Footprints, Heart, Package, Plus, Save, Shirt, Sparkles, Watch, WashingMachine, X } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle2, Footprints, Heart, Loader2, Package, Plus, Shirt, Sparkles, Watch, WashingMachine, X } from 'lucide-react';
 import { getWardrobe } from '../services/api/wardrobe';
-import { getAiOutfitSuggestions, getOutfitSuggestions, getSavedOutfits, saveOutfit } from '../services/api/outfits';
+import { getAiOutfitSuggestions, getOutfitSuggestions, getSavedOutfits, saveOutfit, toggleOutfitFavorite } from '../services/api/outfits';
 import { useAuth } from '../context/AuthContext';
 import { OCCASIONS } from '../constants/categories';
 import { PantsIcon } from '../components/common/ClothingIcons';
@@ -45,10 +45,10 @@ function WardrobeCard({ item }) {
   );
 }
 
-// Full-detail view for a suggested outfit. Previously the suggestion cards had no click
-// handler at all, so "opening" one just meant squinting at the cropped 3-photo strip and
-// truncated reason text already on the dashboard — there was nowhere else for it to go.
-function OutfitDetailModal({ outfit, title, onClose, onSave, isSaving, isSaved }) {
+// Full-detail view for a suggested outfit. Favoriting is the single action here — there's no
+// separate "Save" step. Tapping the heart on an unsaved suggestion saves it (as a favorite) in
+// one request; tapping it again just unfavorites it.
+function OutfitDetailModal({ outfit, title, onClose, isFavorite, onToggleFavorite, isFavoriting }) {
   if (!outfit) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6" onClick={onClose}>
@@ -73,12 +73,14 @@ function OutfitDetailModal({ outfit, title, onClose, onSave, isSaving, isSaved }
         <div className="px-5 pb-5">
           <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{outfit.aiReason}</p>
           <button
-            onClick={onSave}
-            disabled={isSaving || isSaved}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-purple-600 px-3 py-3 text-sm font-bold text-white disabled:opacity-60"
+            onClick={onToggleFavorite}
+            disabled={isFavoriting}
+            className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl px-3 py-3 text-sm font-bold disabled:opacity-60 ${isFavorite ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400' : 'bg-brand-purple-600 text-white'}`}
           >
-            <Save className="h-4 w-4" />
-            {isSaved ? 'Saved to My Outfits' : isSaving ? 'Saving…' : 'Save this look'}
+            {isFavoriting
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <Heart className={`h-4 w-4 ${isFavorite ? 'fill-current' : ''}`} />}
+            {isFavoriting ? 'Working…' : isFavorite ? 'Remove from favorites' : 'Add to favorites'}
           </button>
         </div>
       </div>
@@ -90,29 +92,97 @@ export default function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [message, setMessage] = React.useState('');
+  const [showNotifications, setShowNotifications] = React.useState(false);
+  const [lastSeenDirtyCount, setLastSeenDirtyCount] = React.useState(0);
   const [ask, setAsk] = React.useState('');
   const [occasion, setOccasion] = React.useState('CASUAL');
   const [openOutfitIndex, setOpenOutfitIndex] = React.useState(null);
-  const [savingIndex, setSavingIndex] = React.useState(null);
-  const [savedIndexes, setSavedIndexes] = React.useState([]);
+  // Keyed by suggestion index → { id, isFavorite }. Tracking the real saved outfit id (not
+  // just a favorited/not boolean) is what lets a suggestion be un-favorited without a page
+  // reload, and lets favoriting an unsaved suggestion save it first, in one action.
+  const [savedOutfits, setSavedOutfits] = React.useState({});
+  const [favoritingIndex, setFavoritingIndex] = React.useState(null);
 
   const { data: wardrobeData, isLoading } = useQuery({ queryKey: ['wardrobe', 'dashboard'], queryFn: () => getWardrobe({ limit: 100 }) });
   const { data: outfitsData, isLoading: outfitsLoading } = useQuery({ queryKey: ['outfits', occasion], queryFn: () => getOutfitSuggestions({ occasion, limit: 5 }) });
-  const { data: favoriteOutfitsData } = useQuery({ queryKey: ['saved-outfits', 'favorites-count'], queryFn: () => getSavedOutfits({ limit: 1, favoritesOnly: true }) });
+  // Used both to detect when a suggestion on screen is already favorited (possibly from an
+  // earlier session) and to derive the Favorites stat below — one request instead of two,
+  // since every saved outfit is a favorite now that there's no separate "My outfits" list.
+  const { data: allSavedOutfitsData } = useQuery({ queryKey: ['saved-outfits', 'for-matching'], queryFn: () => getSavedOutfits({ limit: 100, favoritesOnly: true }) });
 
   const items = wardrobeData?.data || [];
   const total = wardrobeData?.pagination?.total || 0;
+  const available = items.filter((item) => item.laundryStatus === 'AVAILABLE').length;
+  const dirty = items.filter((item) => item.laundryStatus === 'DIRTY').length;
+  // Server truth, with any in-flight/optimistic local changes layered on top — this is what
+  // lets the stat update the instant you tap a heart instead of waiting for a refetch.
+  const serverSavedOutfits = allSavedOutfitsData?.data || [];
+  const serverTotalFavorites = allSavedOutfitsData?.pagination?.total || 0;
+
+  let countAdjustment = 0;
+  Object.values(savedOutfits).forEach((saved) => {
+    if (!saved) return;
+    if (saved.isFavorite && !serverSavedOutfits.some((o) => o.id === saved.id)) {
+      countAdjustment += 1;
+    } else if (!saved.isFavorite && serverSavedOutfits.some((o) => o.id === saved.id)) {
+      countAdjustment -= 1;
+    }
+  });
+  const favorites = Math.max(0, serverTotalFavorites + countAdjustment);
   const ruleOutfits = outfitsData?.data || [];
+
+  // Optimistic patch of the shared "all saved outfits" cache — this is what the Favorites
+  // stat and the already-favorited lookup below are derived from, so patching it directly
+  // (instead of waiting for invalidateQueries + a fresh network round trip) is what makes the
+  // stat and the button state agree with each other instantly instead of only after switching
+  // occasion/page forces a refetch.
+  const patchSavedOutfitsCache = (id, patch) => {
+    queryClient.setQueryData(['saved-outfits', 'for-matching'], (current) =>
+      current && { ...current, data: current.data.map((outfit) => (outfit.id === id ? { ...outfit, ...patch } : outfit)) });
+  };
 
   const saveMutation = useMutation({
     mutationFn: saveOutfit,
-    onSuccess: (_response, variables) => {
+    onMutate: (variables) => {
+      const previous = savedOutfits[variables.__index];
+      setSavedOutfits((current) => ({ ...current, [variables.__index]: { id: `pending-${variables.__index}`, isFavorite: true } }));
+      return { previous, index: variables.__index };
+    },
+    onSuccess: (response, variables) => {
       queryClient.invalidateQueries({ queryKey: ['saved-outfits'] });
-      setMessage('Outfit saved to My Outfits.');
-      setSavedIndexes((current) => [...current, variables.__index]);
+      queryClient.invalidateQueries({ queryKey: ['account-summary'] });
+      setMessage('Added to favorites.');
+      setSavedOutfits((current) => ({ ...current, [variables.__index]: { id: response.data.id, isFavorite: true } }));
       setTimeout(() => setMessage(''), 3000);
     },
-    onSettled: () => setSavingIndex(null),
+    onError: (error, variables, context) => {
+      setSavedOutfits((current) => {
+        const next = { ...current };
+        if (context?.previous) next[context.index] = context.previous; else delete next[context.index];
+        return next;
+      });
+    },
+    onSettled: () => setFavoritingIndex(null),
+  });
+
+  const favoriteMutation = useMutation({
+    mutationFn: ({ id, isFavorite }) => toggleOutfitFavorite(id, isFavorite),
+    onMutate: (variables) => {
+      const index = Object.keys(savedOutfits).find((key) => savedOutfits[key]?.id === variables.id);
+      const previous = index !== undefined ? savedOutfits[index] : undefined;
+      if (index !== undefined) setSavedOutfits((current) => ({ ...current, [index]: { ...current[index], isFavorite: variables.isFavorite } }));
+      patchSavedOutfitsCache(variables.id, { isFavorite: variables.isFavorite });
+      return { previous, index };
+    },
+    onError: (error, variables, context) => {
+      if (context?.index !== undefined) setSavedOutfits((current) => ({ ...current, [context.index]: context.previous }));
+      patchSavedOutfitsCache(variables.id, { isFavorite: !variables.isFavorite });
+    },
+    onSettled: () => {
+      setFavoritingIndex(null);
+      queryClient.invalidateQueries({ queryKey: ['saved-outfits'] });
+      queryClient.invalidateQueries({ queryKey: ['account-summary'] });
+    },
   });
 
   const aiMutation = useMutation({ mutationFn: (payload) => getAiOutfitSuggestions(payload) });
@@ -122,8 +192,18 @@ export default function Dashboard() {
   const askDripLy = (event) => {
     event.preventDefault();
     if (!ask.trim()) return;
-    setSavedIndexes([]);
+    setSavedOutfits({});
     aiMutation.mutate({ occasion, prompt: ask.trim() });
+  };
+
+  // Switching occasion used to leave whatever AI result was already on screen in place —
+  // only the "{occasion} look" label recomputed off the new occasion, while the actual
+  // suggested items stayed from the old one. Resetting the AI result here means picking a
+  // new occasion always falls back to (or re-requests) suggestions for that occasion.
+  const handleOccasionChange = (event) => {
+    setOccasion(event.target.value);
+    aiMutation.reset();
+    setSavedOutfits({});
   };
 
   const outfits = aiMutation.data?.data ?? ruleOutfits;
@@ -131,14 +211,52 @@ export default function Dashboard() {
   const isLoadingOutfits = isAiResult ? aiMutation.isPending : outfitsLoading;
   const isFallbackOnly = outfits.length > 0 && outfits.every((outfit) => outfit.fallbackMessage);
 
-  const saveSuggestion = (outfit, index) => {
-    setSavingIndex(index);
-    saveMutation.mutate({ occasion, clothingItemIds: outfit.items.map((item) => item.id), aiReason: outfit.aiReason, __index: index });
+  // Same item set (regardless of order) = same outfit, for matching purposes.
+  const itemSetKey = (itemIds) => [...itemIds].sort().join('|');
+  const savedOutfitLookup = React.useMemo(() => {
+    const map = new Map();
+    (allSavedOutfitsData?.data || []).forEach((saved) => {
+      map.set(itemSetKey(saved.items.map((item) => item.clothingItemId)), { id: saved.id, isFavorite: saved.isFavorite });
+    });
+    return map;
+  }, [allSavedOutfitsData]);
+
+  React.useEffect(() => {
+    if (!outfits.length) return;
+    setSavedOutfits(() => {
+      const next = {};
+      outfits.forEach((outfit, index) => {
+        const match = savedOutfitLookup.get(itemSetKey(outfit.items.map((item) => item.id)));
+        if (match) {
+          next[index] = match;
+        }
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [outfits, savedOutfitLookup]);
+
+  React.useEffect(() => {
+    if (dirty === 0) {
+      setLastSeenDirtyCount(0);
+    }
+  }, [dirty]);
+
+  // The single action on a suggestion card: not favorited yet → save it (as a favorite) in
+  // one request; already favorited → unfavorite it. The heart's fill state flips the instant
+  // you tap it (via favoritingIndex driving the spinner) rather than waiting for the full
+  // round trip before showing any change.
+  const toggleFavorite = (outfit, index) => {
+    setFavoritingIndex(index);
+    const saved = savedOutfits[index];
+    if (saved) {
+      favoriteMutation.mutate({ id: saved.id, isFavorite: !saved.isFavorite });
+    } else {
+      saveMutation.mutate({ occasion, clothingItemIds: outfit.items.map((item) => item.id), aiReason: outfit.aiReason, isFavorite: true, __index: index });
+    }
   };
 
-  const available = items.filter((item) => item.laundryStatus === 'AVAILABLE').length;
-  const dirty = items.filter((item) => item.laundryStatus === 'DIRTY').length;
-  const favorites = favoriteOutfitsData?.pagination?.total || 0;
+
   const count = (key) => items.filter((item) => item.category === key).length;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -149,8 +267,72 @@ export default function Dashboard() {
       <header className="flex items-center justify-between">
         <span className="text-lg font-black lg:hidden">DripLy</span>
         <div className="hidden lg:block" />
-        <div className="flex items-center gap-4">
-          <button aria-label="Notifications" className="rounded-full p-2 text-slate-500 hover:bg-white dark:hover:bg-slate-900"><Bell className="h-5 w-5" /></button>
+        <div className="flex items-center gap-4 relative">
+          <button
+            onClick={() => {
+              setShowNotifications(!showNotifications);
+              if (!showNotifications) {
+                setLastSeenDirtyCount(dirty);
+              }
+            }}
+            aria-label="Notifications"
+            className="relative rounded-full p-2 text-slate-500 hover:bg-white dark:hover:bg-slate-900"
+          >
+            <Bell className="h-5 w-5" />
+            {dirty > lastSeenDirtyCount && (
+              <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rose-500" />
+            )}
+          </button>
+
+          {showNotifications && (
+            <>
+              {/* Overlay to close on click outside */}
+              <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+
+              <div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-slate-100 bg-white p-4 shadow-xl dark:border-slate-800 dark:bg-slate-950">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2 dark:border-slate-800">
+                  <h4 className="font-extrabold text-sm">Notifications</h4>
+                  <button onClick={() => setShowNotifications(false)} className="text-xs text-slate-400 hover:text-slate-600">Close</button>
+                </div>
+                <div className="mt-3 space-y-3">
+                  {dirty > 0 && (
+                    <div className="flex gap-2.5 rounded-xl bg-amber-50/50 p-2.5 text-xs text-slate-700 dark:bg-amber-950/20 dark:text-slate-350">
+                      <span className="mt-0.5 text-amber-500">⚠️</span>
+                      <div>
+                        <strong className="block font-black text-amber-700 dark:text-amber-400">Laundry reminder</strong>
+                        <p className="mt-0.5">You have {dirty} dirty item{dirty > 1 ? 's' : ''} in your laundry bag. <Link to="/laundry" className="underline font-bold text-brand-purple-600 dark:text-brand-purple-400">Manage laundry</Link></p>
+                      </div>
+                    </div>
+                  )}
+                  {favorites > 0 ? (
+                    <div className="flex gap-2.5 rounded-xl bg-rose-50/30 p-2.5 text-xs text-slate-700 dark:bg-rose-950/10 dark:text-slate-350">
+                      <span className="mt-0.5 text-rose-500">❤️</span>
+                      <div>
+                        <strong className="block font-black text-rose-700 dark:text-rose-400">Saved Looks</strong>
+                        <p className="mt-0.5">You have favorited {favorites} outfit suggestions.</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2.5 rounded-xl bg-slate-50 p-2.5 text-xs text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                      <span className="mt-0.5">💡</span>
+                      <div>
+                        <strong className="block font-bold">Discover looks</strong>
+                        <p className="mt-0.5">Try adding items to your favorites to access them quickly.</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex gap-2.5 rounded-xl bg-emerald-50/30 p-2.5 text-xs text-slate-700 dark:bg-emerald-950/10 dark:text-slate-350">
+                    <span className="mt-0.5 text-emerald-500">✨</span>
+                    <div>
+                      <strong className="block font-black text-emerald-700 dark:text-emerald-400">Welcome to DripLy</strong>
+                      <p className="mt-0.5">Ask the AI assistant for customized outfit recommendations based on occasion!</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
           <Link to="/profile" className="grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-brand-purple-100 font-black text-brand-purple-700 dark:bg-brand-purple-950 dark:text-brand-purple-300">
             {user?.avatarUrl ? <img src={user.avatarUrl} alt="Profile" className="h-full w-full object-cover" /> : user?.name?.[0]?.toUpperCase() || 'D'}
           </Link>
@@ -160,7 +342,7 @@ export default function Dashboard() {
       <form onSubmit={askDripLy} className="mt-5 flex flex-col gap-2 sm:flex-row">
         <select
           value={occasion}
-          onChange={(event) => setOccasion(event.target.value)}
+          onChange={handleOccasionChange}
           className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white"
         >
           {OCCASIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
@@ -185,7 +367,7 @@ export default function Dashboard() {
       <section className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{greeting}, {user?.name?.split(' ')[0] || 'there'}.</h1>
-          <p className="mt-2 text-sm text-slate-500">Let’s find your perfect outfit for today.</p>
+          <p className="mt-2 text-sm text-slate-500">Let's find your perfect outfit for today.</p>
         </div>
         <Link to="/wardrobe/add" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-purple-600 to-brand-pink-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-purple-500/15">
           <Plus className="h-4 w-4" />Add clothes
@@ -206,7 +388,9 @@ export default function Dashboard() {
               {isAiResult
                 ? outfits[0]?.source === 'ai'
                   ? 'DripLy AI styled these from your request and available pieces.'
-                  : 'DripLy AI was unavailable, so these are matched from your wardrobe using our styling rules.'
+                  : outfits[0]?.aiUnavailableReason === 'insufficient_wardrobe'
+                    ? 'Add a couple more available pieces so DripLy AI has enough to style with — showing rule-based matches for now.'
+                    : 'DripLy AI was unavailable, so these are matched from your wardrobe using our styling rules.'
                 : 'Rule-based looks created from clean pieces you already own.'}
             </p>
           </div>
@@ -220,6 +404,9 @@ export default function Dashboard() {
         )}
         {saveMutation.isError && (
           <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">{saveMutation.error?.response?.data?.error?.message || 'Could not save this outfit. Please try again.'}</div>
+        )}
+        {favoriteMutation.isError && (
+          <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-600 dark:bg-rose-950/30 dark:text-rose-400">{favoriteMutation.error?.response?.data?.error?.message || 'Could not update favorites. Please try again.'}</div>
         )}
 
         {isLoadingOutfits ? (
@@ -244,21 +431,26 @@ export default function Dashboard() {
                   </div>
                   <div className="p-4 pb-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h3 className="font-black">{occasionLabel(occasion)} look {index + 1}</h3>
-                      <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">{occasionLabel(occasion)}-ready</span>
-                      {outfit.source === 'ai' && <span className="rounded-full bg-brand-purple-50 px-2 py-0.5 text-[10px] font-bold text-brand-purple-700 dark:bg-brand-purple-950/40 dark:text-brand-purple-300">✨ AI styled</span>}
+                      <h3 className="font-black">{outfit.source === 'ai' ? `AI look ${index + 1}` : `${occasionLabel(occasion)} look ${index + 1}`}</h3>
+                      {outfit.source === 'ai' && (
+                        <span className="rounded-full bg-brand-purple-50 px-2 py-0.5 text-[10px] font-bold text-brand-purple-700 dark:bg-brand-purple-950/40 dark:text-brand-purple-300">
+                          ✨ AI styled
+                        </span>
+                      )}
                     </div>
                     <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">{outfit.aiReason}</p>
                   </div>
                 </button>
-                <div className="p-4 pt-3">
+                <div className="flex items-center gap-2 p-4 pt-3">
                   <button
-                    onClick={() => saveSuggestion(outfit, index)}
-                    disabled={savingIndex === index || savedIndexes.includes(index)}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-purple-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-60"
+                    onClick={() => toggleFavorite(outfit, index)}
+                    disabled={favoritingIndex === index}
+                    className={`inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60 ${savedOutfits[index]?.isFavorite ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400' : 'bg-brand-purple-600 text-white'}`}
                   >
-                    <Save className="h-4 w-4" />
-                    {savedIndexes.includes(index) ? 'Saved' : savingIndex === index ? 'Saving…' : 'Save'}
+                    {favoritingIndex === index
+                      ? <Loader2 className="h-4 w-4 animate-spin" />
+                      : <Heart className={`h-4 w-4 ${savedOutfits[index]?.isFavorite ? 'fill-current' : ''}`} />}
+                    {favoritingIndex === index ? 'Working…' : savedOutfits[index]?.isFavorite ? 'Favorited' : 'Add to favorites'}
                   </button>
                 </div>
               </article>
@@ -321,11 +513,11 @@ export default function Dashboard() {
       {openOutfit && (
         <OutfitDetailModal
           outfit={openOutfit}
-          title={`${occasionLabel(occasion)} look ${openOutfitIndex + 1}`}
+          title={`${openOutfit?.source === 'ai' ? 'AI look' : `${occasionLabel(occasion)} look`} ${openOutfitIndex + 1}`}
           onClose={() => setOpenOutfitIndex(null)}
-          onSave={() => saveSuggestion(openOutfit, openOutfitIndex)}
-          isSaving={savingIndex === openOutfitIndex}
-          isSaved={savedIndexes.includes(openOutfitIndex)}
+          isFavorite={Boolean(savedOutfits[openOutfitIndex]?.isFavorite)}
+          isFavoriting={favoritingIndex === openOutfitIndex}
+          onToggleFavorite={() => toggleFavorite(openOutfit, openOutfitIndex)}
         />
       )}
     </div>

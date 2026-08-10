@@ -16,8 +16,25 @@ import DashboardLayout from './components/layout/DashboardLayout';
 import Dashboard from './pages/dashboard';
 import Wardrobe from './pages/wardrobe';
 import Outfits from './pages/outfits';
+import Laundry from './pages/laundry';
+import Settings from './pages/settings';
 
-const queryClient = new QueryClient();
+// Every query previously defaulted to staleTime: 0, so navigating back to a page you'd
+// already visited (dashboard -> wardrobe -> dashboard, etc.) always refetched from the
+// network and showed a loading spinner again, even though nothing had changed. A short
+// staleTime lets React Query reuse what's already in memory instead, which is what actually
+// made the app feel slow to redisplay things — not the mutations themselves. Actions that
+// change data (save, favorite, delete, rate) still explicitly invalidate the relevant
+// queries, so you always see fresh data right after doing something.
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 export default function App() {
   return (
@@ -39,6 +56,8 @@ export default function App() {
               <Route path="/wardrobe" element={<Wardrobe />} />
               <Route path="/outfits" element={<Outfits />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/laundry" element={<Laundry />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="/wardrobe/add" element={<AddClothing />} />
               <Route path="/wardrobe/edit/:id" element={<EditClothing />} />
               <Route path="/wardrobe/:id" element={<ClothingDetails />} />

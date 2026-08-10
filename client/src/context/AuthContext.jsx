@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../services/api/auth';
 
 const AuthContext = createContext(null);
@@ -6,6 +7,7 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   // Attempt to restore session silently on initial mount
   useEffect(() => {
@@ -29,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await authApi.login(credentials);
       if (res?.success && res?.data?.user) {
+        queryClient.clear();
         setUser(res.data.user);
       }
       return res;
@@ -42,6 +45,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const res = await authApi.signup(details);
       if (res?.success && res?.data?.user) {
+        queryClient.clear();
         setUser(res.data.user);
       }
       return res;
@@ -57,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       // Fail-safe cleanup
     } finally {
+      queryClient.clear();
       setUser(null);
       setLoading(false);
     }
@@ -69,6 +74,7 @@ export const AuthProvider = ({ children }) => {
     } catch (err) {
       // Fail-safe cleanup
     } finally {
+      queryClient.clear();
       setUser(null);
       setLoading(false);
     }

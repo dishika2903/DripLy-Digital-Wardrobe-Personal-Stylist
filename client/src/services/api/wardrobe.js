@@ -37,3 +37,8 @@ export const classifyClothing = async (file) => {
   const formData = new FormData(); formData.append('image', file);
   return (await api.post('/ai/classify', formData, { headers: { 'Content-Type': 'multipart/form-data' } })).data;
 };
+
+export const updateClothingStatus = async (id, laundryStatus) => {
+  const res = await api.put(`/wardrobe/${id}`, { laundryStatus });
+  return res.data;
+};

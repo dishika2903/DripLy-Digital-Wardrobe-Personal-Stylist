@@ -61,7 +61,7 @@ export default function ResetPassword() {
         <h2 className="text-3xl font-black tracking-tight text-slate-800 dark:text-white">
           Choose a new password
         </h2>
-        <p className="mt-2 text-sm text-slate-505 dark:text-slate-400">
+        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
           Secure your account with a strong password.
         </p>
       </motion.div>
@@ -78,8 +78,8 @@ export default function ResetPassword() {
               <div className="flex justify-center text-emerald-500">
                 <CheckCircle className="h-12 w-12" />
               </div>
-              <h3 className="text-lg font-bold text-slate-855 dark:text-slate-200">Password Reset Complete</h3>
-              <p className="text-sm text-slate-505 dark:text-slate-400 leading-relaxed">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-slate-200">Password Reset Complete</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                 Your password has been successfully updated. All other active sessions have been securely terminated.
               </p>
               <div className="pt-4">
@@ -101,7 +101,7 @@ export default function ResetPassword() {
               )}
 
               <div>
-                <label htmlFor="password" className="block text-xs uppercase tracking-widest font-extrabold text-slate-450 dark:text-slate-500 mb-2">
+                <label htmlFor="password" className="block text-xs uppercase tracking-widest font-extrabold text-slate-400 dark:text-slate-500 mb-2">
                   New Password
                 </label>
                 <div className="relative">

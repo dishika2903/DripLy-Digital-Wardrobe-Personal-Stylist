@@ -18,6 +18,11 @@ export const registerUser = async ({ name, email, password, gender, heightCm, we
 
   const passwordHash = await bcrypt.hash(password, 10);
 
+  // Neon's connection latency (especially through the PgBouncer pooler) means each round trip
+  // in this transaction can take a few hundred ms to over a second on its own — three
+  // sequential queries here occasionally add up past Prisma's 5s default interactive-transaction
+  // timeout and abort the whole save with "Transaction already closed". A longer timeout gives
+  // real (if slow) requests room to finish instead of getting killed mid-write.
   return await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
@@ -42,7 +47,7 @@ export const registerUser = async ({ name, email, password, gender, heightCm, we
       include: { settings: true },
     });
     return userWithSettings;
-  });
+  }, { timeout: 15000 });
 };
 
 /**
@@ -122,11 +127,15 @@ export const changePassword = async (userId, currentPassword, newPassword) => {
 };
 
 export const getAccountSummary = async (userId) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { createdAt: true, _count: { select: { clothingItems: true, outfits: true } } },
-  });
-  return { memberSince: user.createdAt, wardrobeItems: user._count.clothingItems, outfits: user._count.outfits };
+  // "outfits" here now means favorited outfits — the app no longer has a separate "My
+  // outfits" list, so counting every Outfit row (including ones a person favorited and then
+  // un-favorited, which stay in the table so ratings/history aren't lost) would overstate
+  // what actually shows up on the Favorites page.
+  const [user, favoriteCount] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true, _count: { select: { clothingItems: true } } } }),
+    prisma.outfit.count({ where: { userId, isFavorite: true } }),
+  ]);
+  return { memberSince: user.createdAt, wardrobeItems: user._count.clothingItems, outfits: favoriteCount };
 };
 
 export const deleteUserAccount = async (userId, confirmEmail) => {

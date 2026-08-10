@@ -3,12 +3,13 @@ import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '.
 import logger from '../../utils/logger.js';
 import { signupSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, updateProfileSchema, changePasswordSchema, deleteAccountSchema } from './validation.js';
 import { serializeUser } from './serializer.js';
+import env from '../../config/env.js';
 
 // Cookie settings helper
 const setRefreshTokenCookie = (res, token) => {
   res.cookie('refreshToken', token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.NODE_ENV === 'production',
     sameSite: 'strict',
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
   });
@@ -101,7 +102,7 @@ export const logout = async (req, res, next) => {
   try {
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
 
@@ -121,7 +122,7 @@ export const logoutAll = async (req, res, next) => {
 
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: env.NODE_ENV === 'production',
       sameSite: 'strict',
     });
 
@@ -204,7 +205,7 @@ export const changePassword = async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
     await authService.changePassword(req.user.id, currentPassword, newPassword);
-    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: env.NODE_ENV === 'production', sameSite: 'strict' });
     res.json({ success: true, data: { message: 'Password updated. Please sign in again.' } });
   } catch (error) { next(error); }
 };
@@ -217,7 +218,7 @@ export const deleteAccount = async (req, res, next) => {
   try {
     const { confirmEmail } = deleteAccountSchema.parse(req.body);
     await authService.deleteUserAccount(req.user.id, confirmEmail);
-    res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict' });
+    res.clearCookie('refreshToken', { httpOnly: true, secure: env.NODE_ENV === 'production', sameSite: 'strict' });
     res.json({ success: true, data: { message: 'Account deleted successfully' } });
   } catch (error) { next(error); }
 };
