@@ -64,20 +64,3 @@ npm run dev
 The client will run on [http://localhost:5173](http://localhost:5173) and proxy API requests automatically to the backend on [http://localhost:5000](http://localhost:5000).
 
 ---
-
-## Deployment Guide
-
-### Frontend Client (Vercel)
-1. Import the repository or the `client` directory to Vercel.
-2. In the Vercel project configuration, set the **Framework Preset** to `Vite`.
-3. Add the following **Environment Variable**:
-   - `VITE_API_URL`: Your deployed backend URL (e.g. `https://driply-api.onrender.com/api/v1`).
-4. Vercel's static router will serve the React build and route static page requests securely.
-
-### Backend Server (Render / Railway)
-1. Deploy the `server` directory or configure the deploy command to build the workspace.
-2. Ensure you add all the Environment Variables listed in your server's `.env` configuration.
-3. Set the build and start commands:
-   - Build Command: `npm install && npx prisma generate`
-   - Start Command: `node src/server.js`
-4. Add your deployed Vercel client URL to the server's `allowedOrigins` list in [app.js](file:///d:/DripLy-Digital-Wardrobe-Personal-Stylist/server/src/app.js) to configure CORS securely.
