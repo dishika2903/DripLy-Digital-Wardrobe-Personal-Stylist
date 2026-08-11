@@ -26,8 +26,14 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow server-to-server queries, local dev, or any Vercel domain (previews + production)
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
+    // Allow server-to-server queries, local dev, Vercel domains, or mobile app origins
+    if (
+      !origin || 
+      allowedOrigins.includes(origin) || 
+      origin.endsWith('.vercel.app') ||
+      origin === 'http://localhost' ||
+      origin === 'capacitor://localhost'
+    ) {
       callback(null, true);
     } else {
       logger.warn(`Blocked request from unauthorized origin: ${origin}`);
