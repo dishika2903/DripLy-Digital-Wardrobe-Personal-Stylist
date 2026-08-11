@@ -108,6 +108,17 @@ const outfitResponseSchema = z.object({ suggestions: z.array(z.object({ clothing
 /** Ratings are prompt context only; this does not train or fine-tune a model. */
 export const suggestOutfits = async (userId, { occasion = 'CASUAL', prompt }) => {
   const items = await prisma.clothingItem.findMany({ where: { userId, laundryStatus: 'AVAILABLE' }, select: { id: true, category: true, subcategory: true, color: true, colorDetail: true, pattern: true, fabric: true, season: true, occasionTags: true, imageUrl: true } });
+  
+  // Retrieve user style profile (gender, body type) to customize outfit generation
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { gender: true, bodyType: true }
+  });
+
+  const profileContext = user
+    ? `User style profile: Gender=${user.gender || 'unspecified'}, Body Type=${user.bodyType || 'unspecified'}. Create combinations suitable for this profile.`
+    : '';
+
   // Not enough wardrobe items for the AI to work with is a different situation from the AI
   // actually failing — tag it distinctly (aiUnavailableReason) so the frontend doesn't tell
   // the user "DripLy AI was unavailable" when the real issue is just a small wardrobe.
@@ -118,6 +129,7 @@ export const suggestOutfits = async (userId, { occasion = 'CASUAL', prompt }) =>
   const rated = await prisma.outfit.findMany({ where: { userId, aiRating: { not: null } }, orderBy: { updatedAt: 'desc' }, take: 10, include: { items: { include: { clothingItem: { select: { subcategory: true, color: true } } } } } });
   const feedback = rated.map((outfit) => `${outfit.aiRating === 1 ? 'Liked' : 'Disliked'}: ${outfit.items.map(({ clothingItem }) => `${clothingItem.color} ${clothingItem.subcategory}`).join(' + ')}`).join('; ') || 'No prior ratings.';
   const request = `You are DripLy, a thoughtful stylist. Create ranked wearable outfits only from this user's exact wardrobe IDs.
+${profileContext}
 A single item CAN be a complete outfit on its own (a dress, saree, jumpsuit, gown, or suit) — don't force a top+bottom pairing when one full-look piece already works, though adding shoes/accessories on top of it is great when available.
 Consider silhouette/proportion, color harmony, the requested occasion, and the current month (${new Date().toLocaleString('en', { month: 'long' })}).
 Prioritize the user's specific request text over generic occasion matching when the two could pull in different directions — the free-text request is what the user actually asked for right now.

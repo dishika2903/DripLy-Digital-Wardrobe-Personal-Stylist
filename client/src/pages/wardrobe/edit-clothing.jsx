@@ -6,8 +6,9 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { getClothingItem, updateClothingItem } from '../../services/api/wardrobe';
-import { CATEGORY_MAP, COLORS, FABRICS, PATTERNS, SEASONS, OCCASIONS, LAUNDRY_STATUSES } from '../../constants/categories';
+import { CATEGORY_MAP, COLORS, FABRICS, PATTERNS, SEASONS, OCCASIONS, LAUNDRY_STATUSES, getSubcategoriesForGender } from '../../constants/categories';
 import { Sparkles, Camera, ArrowLeft, Loader2, AlertCircle, Check } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const formSchema = z.object({
   category: z.string().min(1, 'Category is required'),
@@ -27,6 +28,7 @@ export default function EditClothing() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
   const [selectedOccasions, setSelectedOccasions] = useState([]);
@@ -286,7 +288,7 @@ export default function EditClothing() {
                       className="w-full px-4 py-3.5 bg-slate-50/50 dark:bg-slate-900/30 border border-slate-200 dark:border-slate-800/80 focus:border-brand-purple-500 rounded-2xl outline-none text-slate-800 dark:text-slate-200 text-sm"
                     />
                     <datalist id="edit-subcategory-suggestions">
-                      {selectedCategory && CATEGORY_MAP[selectedCategory]?.map((sub) => <option key={sub} value={sub} />)}
+                      {selectedCategory && getSubcategoriesForGender(selectedCategory, user?.gender).map((sub) => <option key={sub} value={sub} />)}
                     </datalist>
                     {errors.subcategory && <p className="mt-1 text-xs text-rose-500 font-medium">{errors.subcategory.message}</p>}
                   </div>

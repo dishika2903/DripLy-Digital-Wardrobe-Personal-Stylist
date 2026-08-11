@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Camera, ImagePlus, Loader2, Plus, Sparkles, Wand2, X } from 'lucide-react';
-import { CATEGORY_MAP, COLORS, FABRICS, LAUNDRY_STATUSES, OCCASIONS, PATTERNS, SEASONS } from '../../constants/categories';
+import { CATEGORY_MAP, COLORS, FABRICS, LAUNDRY_STATUSES, OCCASIONS, PATTERNS, SEASONS, getSubcategoriesForGender } from '../../constants/categories';
 import { classifyClothing, createClothingItem } from '../../services/api/wardrobe';
+import { useAuth } from '../../context/AuthContext';
 
 const categories = Object.keys(CATEGORY_MAP);
 const initial = {
@@ -35,6 +36,7 @@ const Field = ({ label, children, ai }) => (
 export default function AddClothing() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState('');
   const [form, setForm] = useState(initial);
@@ -119,7 +121,7 @@ export default function AddClothing() {
   };
 
   const options = (values) => values.map((value) => <option key={value.value || value} value={value.value || value}>{value.label || value.replaceAll('_', ' ')}</option>);
-  const subcategoryOptions = CATEGORY_MAP[form.category] || [];
+  const subcategoryOptions = getSubcategoriesForGender(form.category, user?.gender);
 
   return (
     <div className="mx-auto max-w-5xl p-5 sm:p-8">

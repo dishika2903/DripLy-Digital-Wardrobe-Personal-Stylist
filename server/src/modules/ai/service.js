@@ -19,9 +19,13 @@ const safeDefaults = { category: 'OTHER', color: 'MULTICOLOR', pattern: 'OTHER',
 const within = (field, value) => enumValues[field].includes(value) ? value : safeDefaults[field];
 const withTimeout = (promise, ms = 20000) => Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error('AI request timed out')), ms))]);
 
-export const classifyImage = async (file) => {
+export const classifyImage = async (file, user = null) => {
+  const genderContext = user && user.gender
+    ? `The user's style profile gender is "${user.gender}". Please classify the item using terminology appropriate/relevant to their profile if there is ambiguity, but prioritize objective appearance.`
+    : '';
   const prompt = `Classify this single clothing item. Return JSON only with category, subcategory, color, colorDetail, pattern, fabric, season, occasions.
 If the photo shows more than one garment (e.g. a person wearing several layers, or other clothes visible in the background), classify only the single most prominent, clearly-intended item in frame — do not blend attributes from multiple garments together.
+${genderContext}
 Use a specific natural-language subcategory (for example wide-leg jeans, oversized tee, button-down, ankle boots, chelsea boots) rather than a generic one.
 Category must reflect what the piece actually is, not how it's styled in the photo: tops/shirts/sweaters/jackets worn on the upper body go to the matching category, pants/skirts/shorts go to BOTTOMS, shoes/sandals/boots go to FOOTWEAR, jewelry/bags/belts/hats/watches go to ACCESSORIES, and only single-piece full-body garments (dresses, sarees, jumpsuits, gowns, suits, rompers) go to OTHER.
 For color, pick the single closest dominant enum value; if the item genuinely has two or more distinct colors (not just shading of one color), set color to MULTICOLOR and describe the actual colorway in colorDetail as a short natural phrase (for example "black and white" or "navy with red trim"). If the item is a single color, leave colorDetail empty.

@@ -99,3 +99,25 @@ export const LAUNDRY_STATUSES = [
   { value: 'AVAILABLE', label: 'Available (Clean)', colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-250/50 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30' },
   { value: 'DIRTY', label: 'Dirty', colorClass: 'text-amber-600 bg-amber-50 border-amber-250/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' },
 ];
+
+export const getSubcategoriesForGender = (category, gender) => {
+  const list = CATEGORY_MAP[category] || [];
+  if (!gender || typeof gender !== 'string') return list;
+
+  const g = gender.toLowerCase();
+  if (g === 'man') {
+    // Exclude feminine items for men's style profile
+    const exclusions = new Set([
+      // Tops
+      'Blouse', 'Camisole', 'Crop Top', 'Bodysuit', 'Off-shoulder Top', 'Corset Top',
+      // Bottoms
+      'A-line Skirt', 'Pencil Skirt', 'Pleated Skirt', 'Mini Skirt', 'Maxi Skirt', 'Culottes', 'Palazzo Pants',
+      // Footwear
+      'Ballet Flats', 'Stiletto Heels', 'Block Heels', 'Wedge Heels', 'Platform Heels', 'Mules',
+      // Other
+      'Dress', 'Maxi Dress', 'Midi Dress', 'Sundress', 'Wrap Dress', 'Romper'
+    ]);
+    return list.filter(item => !exclusions.has(item));
+  }
+  return list;
+};
