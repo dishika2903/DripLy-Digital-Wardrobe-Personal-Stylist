@@ -26,8 +26,8 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow server-to-server queries or local REST client requests without an origin header
-    if (!origin || allowedOrigins.includes(origin)) {
+    // Allow server-to-server queries, local dev, or any Vercel domain (previews + production)
+    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
       logger.warn(`Blocked request from unauthorized origin: ${origin}`);
