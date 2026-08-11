@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Bell, CheckCircle2, Footprints, Heart, Loader2, Package, Plus, Shirt, Sparkles, Watch, WashingMachine, X } from 'lucide-react';
+import { AlertTriangle, Bell, CheckCircle2, Footprints, Heart, HelpCircle, Loader2, Package, Plus, Shirt, Sparkles, Watch, WashingMachine, X } from 'lucide-react';
 import { getWardrobe } from '../services/api/wardrobe';
 import { getAiOutfitSuggestions, getOutfitSuggestions, getSavedOutfits, saveOutfit, toggleOutfitFavorite } from '../services/api/outfits';
 import { useAuth } from '../context/AuthContext';
@@ -88,6 +88,79 @@ function OutfitDetailModal({ outfit, title, onClose, isFavorite, onToggleFavorit
   );
 }
 
+function GuideModal({ onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">👕</span>
+            <div>
+              <h3 className="text-lg font-black">How to Use DripLy</h3>
+              <p className="text-xs text-slate-400">Get the most out of your digital wardrobe stylist</p>
+            </div>
+          </div>
+          <button onClick={onClose} aria-label="Close" className="rounded-full p-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+        </div>
+        
+        <div className="mt-5 space-y-5">
+          <div className="flex gap-4">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-purple-100 text-brand-purple-600 dark:bg-brand-purple-950 dark:text-brand-purple-300 text-sm font-bold">1</span>
+            <div>
+              <strong className="block text-sm font-bold text-slate-800 dark:text-slate-200">Catalog Your Closet</strong>
+              <p className="mt-0.5 text-xs text-slate-500">Click "+ Add clothes" (or the plus button on mobile). Take a photo, and the AI will auto-identify category, colors, pattern, fabric, and occasions!</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-purple-100 text-brand-purple-600 dark:bg-brand-purple-950 dark:text-brand-purple-300 text-sm font-bold">2</span>
+            <div>
+              <strong className="block text-sm font-bold text-slate-800 dark:text-slate-200">Manage Laundry Status</strong>
+              <p className="mt-0.5 text-xs text-slate-500">Go to the "Laundry" page to toggle items as clean (Available) or dirty (Dirty). DripLy will only suggest outfits using your clean clothes!</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-purple-100 text-brand-purple-600 dark:bg-brand-purple-950 dark:text-brand-purple-300 text-sm font-bold">3</span>
+            <div>
+              <strong className="block text-sm font-bold text-slate-800 dark:text-slate-200">Get AI Outfit Matches</strong>
+              <p className="mt-0.5 text-xs text-slate-500">Type a query in the "Ask DripLy" search bar (e.g. "something cozy for a rainy day") to get personalized recommendations tailored to your goals.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-purple-100 text-brand-purple-600 dark:bg-brand-purple-950 dark:text-brand-purple-300 text-sm font-bold">4</span>
+            <div>
+              <strong className="block text-sm font-bold text-slate-800 dark:text-slate-200">Save Your Favorites</strong>
+              <p className="mt-0.5 text-xs text-slate-500">Click the heart icon on any suggested outfit to save it to your Favorites tab. Revisit your favorite looks anytime.</p>
+            </div>
+          </div>
+
+          <div className="flex gap-4">
+            <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-purple-100 text-brand-purple-600 dark:bg-brand-purple-950 dark:text-brand-purple-300 text-sm font-bold">5</span>
+            <div>
+              <strong className="block text-sm font-bold text-slate-800 dark:text-slate-200">Customize Style Profile</strong>
+              <p className="mt-0.5 text-xs text-slate-500">Go to "Settings" to enter your body shape, height, and gender. The AI Stylist uses these parameters to tailor matches specifically to your fit!</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full rounded-xl bg-brand-purple-600 py-3 text-sm font-bold text-white hover:bg-brand-purple-700 transition"
+        >
+          Got it, let's go!
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -97,6 +170,15 @@ export default function Dashboard() {
   const [ask, setAsk] = React.useState('');
   const [occasion, setOccasion] = React.useState('CASUAL');
   const [openOutfitIndex, setOpenOutfitIndex] = React.useState(null);
+  const [showGuide, setShowGuide] = React.useState(false);
+
+  React.useEffect(() => {
+    const hasSeenGuide = localStorage.getItem('driply-guide-seen');
+    if (!hasSeenGuide) {
+      setShowGuide(true);
+      localStorage.setItem('driply-guide-seen', 'true');
+    }
+  }, []);
   // Keyed by suggestion index → { id, isFavorite }. Tracking the real saved outfit id (not
   // just a favorited/not boolean) is what lets a suggestion be un-favorited without a page
   // reload, and lets favoriting an unsaved suggestion save it first, in one action.
@@ -366,7 +448,16 @@ export default function Dashboard() {
 
       <section className="mt-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight sm:text-4xl">{greeting}, {user?.name?.split(' ')[0] || 'there'}.</h1>
+          <h1 className="text-3xl font-black tracking-tight sm:text-4xl flex items-center gap-2">
+            <span>{greeting}, {user?.name?.split(' ')[0] || 'there'}.</span>
+            <button
+              onClick={() => setShowGuide(true)}
+              className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 hover:bg-brand-purple-50 hover:text-brand-purple-600 dark:bg-slate-800 dark:text-slate-500 dark:hover:bg-slate-800/80"
+              title="How it works"
+            >
+              <HelpCircle className="h-4.5 w-4.5" />
+            </button>
+          </h1>
           <p className="mt-2 text-sm text-slate-500">Let's find your perfect outfit for today.</p>
         </div>
         <Link to="/wardrobe/add" className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-purple-600 to-brand-pink-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-brand-purple-500/15">
@@ -519,6 +610,10 @@ export default function Dashboard() {
           isFavoriting={favoritingIndex === openOutfitIndex}
           onToggleFavorite={() => toggleFavorite(openOutfit, openOutfitIndex)}
         />
+      )}
+
+      {showGuide && (
+        <GuideModal onClose={() => setShowGuide(false)} />
       )}
     </div>
   );
