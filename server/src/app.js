@@ -20,7 +20,8 @@ app.use(helmet());
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://driply.vercel.app' // Placeholder Vercel url
+  'https://driply.vercel.app', // Placeholder Vercel url
+  'https://drip-ly-digital-wardrobe-personal-s.vercel.app' // Live Vercel deployment
 ];
 
 app.use(cors({
