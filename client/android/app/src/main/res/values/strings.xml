@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DripLy</string>
+    <string name="title_activity_main">DripLy</string>
+    <string name="package_name">com.driply.app</string>
+    <string name="custom_url_scheme">com.driply.app</string>
+</resources>
