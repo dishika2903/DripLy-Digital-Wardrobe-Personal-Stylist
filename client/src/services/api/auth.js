@@ -59,4 +59,4 @@ export const updateProfile = async (data) => {
 export const uploadAvatar = async (formData) => (await api.patch('/auth/avatar', formData, { headers: { 'Content-Type': undefined } })).data;
 export const changePassword = async (data) => (await api.patch('/auth/change-password', data)).data;
 export const getAccountSummary = async () => (await api.get('/auth/account-summary')).data;
-export const deleteAccount = async (data) => (await api.delete('/auth/me', { data })).data;
+export const deleteAccount = async (data) => (await api.delete('/auth/me', { params: data })).data;

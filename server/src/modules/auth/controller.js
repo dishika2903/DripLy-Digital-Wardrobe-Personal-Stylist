@@ -216,7 +216,7 @@ export const accountSummary = async (req, res, next) => {
 
 export const deleteAccount = async (req, res, next) => {
   try {
-    const { confirmEmail } = deleteAccountSchema.parse(req.body);
+    const { confirmEmail } = deleteAccountSchema.parse(req.query);
     await authService.deleteUserAccount(req.user.id, confirmEmail);
     res.clearCookie('refreshToken', { httpOnly: true, secure: env.NODE_ENV === 'production', sameSite: 'strict' });
     res.json({ success: true, data: { message: 'Account deleted successfully' } });
