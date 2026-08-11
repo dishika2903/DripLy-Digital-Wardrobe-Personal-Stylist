@@ -101,7 +101,7 @@ export const LAUNDRY_STATUSES = [
 ];
 
 export const CATEGORY_LABELS = {
-  TOPS: 'Upperwear',
+  TOPS: 'Topwear',
   BOTTOMS: 'Bottoms',
   OUTERWEAR: 'Outerwear',
   FOOTWEAR: 'Footwear',
