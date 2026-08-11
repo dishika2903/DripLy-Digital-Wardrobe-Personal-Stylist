@@ -8,7 +8,7 @@
       "enabled": true
     },
     "CapacitorHttp": {
-      "enabled": true
+      "enabled": false
     }
   }
 }
