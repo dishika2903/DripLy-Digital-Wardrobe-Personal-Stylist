@@ -1,0 +1,14 @@
+{
+  "appId": "com.driply.app",
+  "appName": "DripLy",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "plugins": {
+    "CapacitorCookies": {
+      "enabled": true
+    },
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
+}
