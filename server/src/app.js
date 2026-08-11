@@ -32,6 +32,7 @@ app.use(cors({
       allowedOrigins.includes(origin) || 
       origin.endsWith('.vercel.app') ||
       origin === 'http://localhost' ||
+      origin === 'https://localhost' ||
       origin === 'capacitor://localhost'
     ) {
       callback(null, true);
