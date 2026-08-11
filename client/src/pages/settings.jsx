@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Camera, CheckCircle2, KeyRound, Loader2, Save, ShieldAlert, Trash2, UserRound } from 'lucide-react';
+import { AlertCircle, Camera, CheckCircle2, KeyRound, Loader2, LogOut, Save, ShieldAlert, Trash2, UserRound } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { changePassword, deleteAccount, uploadAvatar } from '../services/api/auth';
 
@@ -142,14 +142,28 @@ export default function Settings() {
 
   const initials = user?.name?.[0]?.toUpperCase() || 'D';
 
+  const handleSignOut = async () => {
+    await logout();
+    navigate('/login', { replace: true });
+  };
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 sm:px-7 lg:px-9">
-      <header>
-        <p className="text-sm font-bold text-brand-purple-600">PREFERENCES & CONTROLS</p>
-        <h1 className="mt-1 text-3xl font-black">Settings</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Manage your account profile, avatar, security settings, and data.
-        </p>
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm font-bold text-brand-purple-600">PREFERENCES & CONTROLS</p>
+          <h1 className="mt-1 text-3xl font-black">Settings</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Manage your account profile, avatar, security settings, and data.
+          </p>
+        </div>
+        <button
+          onClick={handleSignOut}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-350 dark:hover:bg-rose-950/20 dark:hover:text-rose-400"
+        >
+          <LogOut className="h-4 w-4" />
+          Sign Out
+        </button>
       </header>
 
       {/* Alert banner */}
