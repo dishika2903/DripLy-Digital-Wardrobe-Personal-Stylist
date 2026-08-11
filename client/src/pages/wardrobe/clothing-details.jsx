@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { getClothingItem, deleteClothingItem } from '../../services/api/wardrobe';
-import { COLORS, LAUNDRY_STATUSES } from '../../constants/categories';
+import { COLORS, LAUNDRY_STATUSES, CATEGORY_LABELS } from '../../constants/categories';
 import { ArrowLeft, Edit2, Trash2, Calendar, Sparkles, Tag, Shirt, Loader2, AlertCircle, Heart } from 'lucide-react';
 
 export default function ClothingDetails() {
@@ -172,7 +172,7 @@ export default function ClothingDetails() {
               <div className="text-left space-y-4">
                 <div>
                   <span className="text-[10px] uppercase font-extrabold tracking-widest text-brand-purple-500 dark:text-brand-purple-400">
-                    {item.category}
+                    {CATEGORY_LABELS[item.category] || item.category}
                   </span>
                   <h2 className="text-3xl font-black text-slate-900 dark:text-white mt-1 leading-tight">
                     {item.subcategory}

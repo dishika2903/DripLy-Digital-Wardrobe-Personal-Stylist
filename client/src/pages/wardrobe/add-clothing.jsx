@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Camera, ImagePlus, Loader2, Plus, Sparkles, Wand2, X } from 'lucide-react';
-import { CATEGORY_MAP, COLORS, FABRICS, LAUNDRY_STATUSES, OCCASIONS, PATTERNS, SEASONS, getSubcategoriesForGender } from '../../constants/categories';
+import { CATEGORY_MAP, CATEGORY_LABELS, COLORS, FABRICS, LAUNDRY_STATUSES, OCCASIONS, PATTERNS, SEASONS, getSubcategoriesForGender } from '../../constants/categories';
 import { classifyClothing, createClothingItem } from '../../services/api/wardrobe';
 import { useAuth } from '../../context/AuthContext';
 
@@ -120,7 +120,7 @@ export default function AddClothing() {
     }
   };
 
-  const options = (values) => values.map((value) => <option key={value.value || value} value={value.value || value}>{value.label || value.replaceAll('_', ' ')}</option>);
+  const options = (values) => values.map((value) => <option key={value.value || value} value={value.value || value}>{value.label || CATEGORY_LABELS[value] || value.replaceAll('_', ' ')}</option>);
   const subcategoryOptions = getSubcategoriesForGender(form.category, user?.gender);
 
   return (

@@ -100,6 +100,16 @@ export const LAUNDRY_STATUSES = [
   { value: 'DIRTY', label: 'Dirty', colorClass: 'text-amber-600 bg-amber-50 border-amber-250/50 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30' },
 ];
 
+export const CATEGORY_LABELS = {
+  TOPS: 'Tops & Shirts',
+  BOTTOMS: 'Bottoms',
+  OUTERWEAR: 'Outerwear',
+  FOOTWEAR: 'Footwear',
+  ACCESSORIES: 'Accessories',
+  UNDERWEAR: 'Underwear',
+  OTHER: 'Other/Dresses'
+};
+
 export const getSubcategoriesForGender = (category, gender) => {
   const list = CATEGORY_MAP[category] || [];
   if (!gender || typeof gender !== 'string') return list;

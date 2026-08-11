@@ -13,7 +13,7 @@ import { PantsIcon } from '../components/common/ClothingIcons';
 // and anything else that doesn't fit the other buckets — matched by actual category rather than
 // by guessing at subcategory keywords, since subcategory is free text.
 const categories = [
-  { key: 'TOPS', label: 'Tops', icon: Shirt, tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300', href: '/wardrobe?category=TOPS' },
+  { key: 'TOPS', label: 'Tops & Shirts', icon: Shirt, tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300', href: '/wardrobe?category=TOPS' },
   { key: 'BOTTOMS', label: 'Bottoms', icon: PantsIcon, tone: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300', href: '/wardrobe?category=BOTTOMS' },
   { key: 'OTHER', label: 'Other', icon: Package, tone: 'bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300', href: '/wardrobe?category=OTHER' },
   { key: 'FOOTWEAR', label: 'Shoes', icon: Footprints, tone: 'bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300', href: '/wardrobe?category=FOOTWEAR' },

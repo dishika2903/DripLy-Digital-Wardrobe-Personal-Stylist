@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Search, WashingMachine, Shirt, Check, Loader2, Sparkles } from 'lucide-react';
 import { getWardrobe, updateClothingStatus } from '../services/api/wardrobe';
+import { CATEGORY_LABELS } from '../constants/categories';
 
 function StatCard({ label, value, caption, icon: Icon, tone }) {
   return (
@@ -198,7 +199,7 @@ export default function Laundry() {
                 {/* Details Section */}
                 <div className="p-3">
                   <span className="text-[9px] font-black uppercase tracking-wider text-slate-400">
-                    {item.category}
+                    {CATEGORY_LABELS[item.category] || item.category}
                   </span>
                   <h3 className="truncate text-xs font-extrabold text-slate-700 dark:text-slate-200">
                     {item.subcategory}

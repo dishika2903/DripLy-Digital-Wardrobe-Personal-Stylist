@@ -6,7 +6,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { getClothingItem, updateClothingItem } from '../../services/api/wardrobe';
-import { CATEGORY_MAP, COLORS, FABRICS, PATTERNS, SEASONS, OCCASIONS, LAUNDRY_STATUSES, getSubcategoriesForGender } from '../../constants/categories';
+import { CATEGORY_MAP, COLORS, FABRICS, PATTERNS, SEASONS, OCCASIONS, LAUNDRY_STATUSES, getSubcategoriesForGender, CATEGORY_LABELS } from '../../constants/categories';
 import { Sparkles, Camera, ArrowLeft, Loader2, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -270,7 +270,7 @@ export default function EditClothing() {
                       <option value="">Select Category</option>
                       {Object.keys(CATEGORY_MAP).map((cat) => (
                         <option key={cat} value={cat}>
-                          {cat.charAt(0) + cat.slice(1).toLowerCase()}
+                          {CATEGORY_LABELS[cat] || cat.charAt(0) + cat.slice(1).toLowerCase()}
                         </option>
                       ))}
                     </select>
