@@ -4,6 +4,9 @@ export const signup = async (data) => {
   const res = await api.post('/auth/signup', data);
   if (res.data?.success && res.data?.data?.accessToken) {
     setAccessToken(res.data.data.accessToken);
+    if (res.data.data.refreshToken) {
+      localStorage.setItem('refreshToken', res.data.data.refreshToken);
+    }
   }
   return res.data;
 };
@@ -12,14 +15,21 @@ export const login = async (data) => {
   const res = await api.post('/auth/login', data);
   if (res.data?.success && res.data?.data?.accessToken) {
     setAccessToken(res.data.data.accessToken);
+    if (res.data.data.refreshToken) {
+      localStorage.setItem('refreshToken', res.data.data.refreshToken);
+    }
   }
   return res.data;
 };
 
 export const refreshSession = async () => {
-  const res = await api.post('/auth/refresh');
+  const localRefreshToken = localStorage.getItem('refreshToken');
+  const res = await api.post('/auth/refresh', { refreshToken: localRefreshToken });
   if (res.data?.success && res.data?.data?.accessToken) {
     setAccessToken(res.data.data.accessToken);
+    if (res.data.data.refreshToken) {
+      localStorage.setItem('refreshToken', res.data.data.refreshToken);
+    }
   }
   return res.data;
 };
@@ -27,12 +37,14 @@ export const refreshSession = async () => {
 export const logout = async () => {
   const res = await api.post('/auth/logout');
   setAccessToken(null);
+  localStorage.removeItem('refreshToken');
   return res.data;
 };
 
 export const logoutAll = async () => {
   const res = await api.post('/auth/logout-all');
   setAccessToken(null);
+  localStorage.removeItem('refreshToken');
   return res.data;
 };
 

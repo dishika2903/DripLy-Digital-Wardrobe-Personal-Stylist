@@ -44,11 +44,21 @@ api.interceptors.response.use(
 
       try {
         // Attempt to request a new access token via the refresh endpoint
-        const response = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true });
+        const localRefreshToken = localStorage.getItem('refreshToken');
+        const refreshUrl = (import.meta.env.VITE_API_URL || '/api/v1') + '/auth/refresh';
+        const response = await axios.post(
+          refreshUrl,
+          { refreshToken: localRefreshToken },
+          { withCredentials: true }
+        );
 
         if (response.data?.success && response.data?.data?.accessToken) {
           const newAccessToken = response.data.data.accessToken;
           setAccessToken(newAccessToken);
+
+          if (response.data.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.data.refreshToken);
+          }
 
           // Update header and retry the original request
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;

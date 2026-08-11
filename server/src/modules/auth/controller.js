@@ -15,18 +15,25 @@ const setRefreshTokenCookie = (res, token) => {
   });
 };
 
-// Manually extract cookies from request headers
+// Manually extract cookies from request headers, with body/header fallback for mobile devices
 const getCookieFromHeaders = (req, name) => {
   const rc = req.headers.cookie;
-  if (!rc) return null;
-  const list = {};
-  rc.split(';').forEach((cookie) => {
-    const parts = cookie.split('=');
-    const key = parts.shift().trim();
-    const val = parts.join('=');
-    list[key] = decodeURIComponent(val);
-  });
-  return list[name] || null;
+  if (rc) {
+    const list = {};
+    rc.split(';').forEach((cookie) => {
+      const parts = cookie.split('=');
+      const key = parts.shift().trim();
+      const val = parts.join('=');
+      list[key] = decodeURIComponent(val);
+    });
+    if (list[name]) return list[name];
+  }
+  
+  // Fallback for mobile platforms (which cannot reliably persist HttpOnly cookies across restarts)
+  if (name === 'refreshToken') {
+    return req.body?.refreshToken || req.query?.refreshToken || req.headers['x-refresh-token'] || null;
+  }
+  return null;
 };
 
 const sendAuthResponse = (res, user, statusCode = 200) => {
@@ -40,6 +47,7 @@ const sendAuthResponse = (res, user, statusCode = 200) => {
     data: {
       user: serializeUser(user),
       accessToken,
+      refreshToken, // Returned for client-side storage fallback on mobile devices
     },
   });
 };
