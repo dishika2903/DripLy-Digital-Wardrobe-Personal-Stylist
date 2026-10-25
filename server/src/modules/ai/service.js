@@ -72,7 +72,15 @@ Exact allowed enum values: category=${enumValues.category.join(', ')}, color=${e
     response = await withRetry(() =>
       withTimeout(ai.models.generateContent({
         model: GEMINI_MODEL,
-        contents: [{ inlineData: { mimeType: file.mimetype, data: file.buffer.toString('base64') } }, { text: prompt }],
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType: file.mimetype, data: file.buffer.toString('base64') } },
+            ],
+          },
+        ],
         config: { responseMimeType: 'application/json' },
       }))
     );
