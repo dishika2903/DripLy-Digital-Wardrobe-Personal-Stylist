@@ -50,6 +50,7 @@ const limiter = rateLimit({
   max: 100, // limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => req.path === '/ping', // keep-alive pings don't count
   message: {
     success: false,
     error: {
@@ -76,6 +77,10 @@ app.use('/api/v1/wardrobe', wardrobeRouter);
 app.use('/api/v1/settings', settingsRouter);
 app.use('/api/v1/outfits', outfitsRouter);
 app.use('/api/v1/ai', aiRouter);
+
+// Lightweight keep-alive probe — the Vercel frontend pings this every 10 min
+// to prevent Render's free tier from spinning down mid-session.
+app.get('/api/v1/ping', (req, res) => res.json({ ok: true, ts: Date.now() }));
 
 // Hello World & Health Check Route
 app.get('/api/v1/hello', (req, res) => {

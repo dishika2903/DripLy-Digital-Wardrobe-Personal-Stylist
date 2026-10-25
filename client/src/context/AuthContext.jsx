@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import * as authApi from '../services/api/auth';
+import api from '../services/api/api';
 
 const AuthContext = createContext(null);
 
@@ -8,6 +9,23 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const queryClient = useQueryClient();
+  const pingRef = useRef(null);
+
+  // Keep Render's free-tier server awake by pinging it every 10 min while
+  // the user is logged in. Without this the server spins down after 15 min
+  // of inactivity and the next AI classify call times out with a cold-start.
+  useEffect(() => {
+    if (user) {
+      // Ping immediately so a freshly-logged-in session warms the server.
+      api.get('/ping').catch(() => {});
+      pingRef.current = setInterval(() => {
+        api.get('/ping').catch(() => {}); // silent — we don't care about the response
+      }, 10 * 60 * 1000); // every 10 minutes
+    } else {
+      clearInterval(pingRef.current);
+    }
+    return () => clearInterval(pingRef.current);
+  }, [user]);
 
   // Attempt to restore session silently on initial mount
   useEffect(() => {

@@ -75,10 +75,15 @@ export default function AddClothing() {
       if (result.occasions?.length) setOccasionTags(result.occasions);
       if (result.invalidFields?.length) setError(`Please review ${result.invalidFields.join(', ')} — DripLy used a safe default.`);
     } catch (err) {
-      // The AI couldn't identify this item — every field below is still fully editable,
-      // including a real subcategory dropdown (Dress, Blazer, and everything else) instead
-      // of a free-text box.
-      setError(err.response?.data?.error?.message || 'Could not identify this item. You can still complete the form manually below.');
+      // The AI couldn't identify this item — every field below is still fully editable.
+      // Distinguish quota/rate-limit errors so the user knows to wait vs. fill in manually.
+      const status = err.response?.status;
+      const serverMsg = err.response?.data?.error?.message;
+      if (status === 429) {
+        setError(serverMsg || 'AI identification is rate-limited right now. Wait ~1 minute then hit "Re-identify".');
+      } else {
+        setError(serverMsg || 'Could not identify this item. You can still complete the form manually below.');
+      }
     } finally {
       setIdentifying(false);
     }
